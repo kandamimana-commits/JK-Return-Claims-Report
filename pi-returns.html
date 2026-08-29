@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JK888 — Issues / Return</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --page-bg:#FAFAF9; --surface-1:#F4F3F1; --surface-2:#FFFFFF;
+    --text-primary:#1E1B29; --text-secondary:#6B6478; --text-muted:#A39CB0;
+    --border:rgba(31,27,42,0.09);
+    --fill-primary:#17151F; --on-primary:#FFFFFF;
+    --bg-success:#E1F5EE; --text-success:#085041;
+    --bg-danger:#FAECE7;  --text-danger:#4A1B0C;
+    --bg-warning:#FFF3DE; --text-warning:#B4670A;
+    --bg-pro:#FBEAF0;     --text-pro:#4B1528;
+    --bg-accent:#EEEDFE;  --text-accent:#3C3489;
+    --radius-lg:12px; --radius-md:10px; --radius-pill:999px;
+    --font-display:'Poppins',sans-serif; --font-body:'Inter',-apple-system,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page-bg:#131019; --surface-1:#1C1826; --surface-2:#211D2C;
+      --text-primary:#F3F1FA; --text-secondary:#B7AFC7; --text-muted:#7A7289;
+      --border:rgba(243,241,250,0.12);
+      --fill-primary:#F3F1FA; --on-primary:#17151F;
+      --bg-success:#04342C; --text-success:#5DCAA5;
+      --bg-danger:#4A1B0C;  --text-danger:#F0997B;
+      --bg-warning:#412402; --text-warning:#FAC775;
+      --bg-pro:#4B1528;     --text-pro:#ED93B1;
+      --bg-accent:#26215C;  --text-accent:#AFA9EC;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--page-bg); color:var(--text-primary); font-family:var(--font-body); -webkit-font-smoothing:antialiased; }
+  input,select{ height:36px; border-radius:var(--radius-md); border:0.5px solid var(--border); background:var(--surface-2); color:var(--text-primary); padding:0 12px; font-size:13.5px; font-family:inherit; width:100%; }
+  button{font-family:inherit; cursor:pointer;}
+  label{font-size:12px; color:var(--text-secondary); display:block; margin:0 0 5px;}
+  .mono{font-family:var(--font-mono);}
+  .disp{font-family:var(--font-display); letter-spacing:-0.01em;}
+
+  .shell{display:flex; min-height:100vh;}
+  .sidebar{width:180px; flex-shrink:0; background:var(--surface-1); padding:18px 12px; border-right:0.5px solid var(--border);}
+  @media (max-width:768px){ .shell{flex-direction:column;} .sidebar{width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border-right:none; border-bottom:0.5px solid var(--border);} .sidebar .navlist{display:flex; flex-direction:row; gap:4px;} .sidebar .navlabel{display:none;} }
+  .brand{display:flex; align-items:center; gap:8px; margin-bottom:20px;}
+  @media (max-width:768px){ .brand{margin-bottom:0;} }
+  .brand-icon{width:28px; height:28px; border-radius:8px; background:var(--fill-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .brand-icon i{color:var(--on-primary); font-size:15px;}
+  .brand-name{font-size:13px; font-weight:600; margin:0; line-height:1.3;}
+  .navlist{display:flex; flex-direction:column; gap:2px;}
+  .navitem{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--text-secondary); font-size:13px; white-space:nowrap;}
+  .navitem i{font-size:16px; flex-shrink:0;}
+  .navitem.active{background:var(--bg-accent); color:var(--text-accent);}
+
+  .main{flex:1; padding:22px 26px; min-width:0;}
+  @media (max-width:768px){ .main{padding:16px;} }
+  .topbar{margin-bottom:18px;}
+  .crumb{font-size:11px; color:var(--text-muted); margin:0;}
+  .pagetitle{font-size:19px; font-weight:600; margin:2px 0 0; font-family:var(--font-display);}
+
+  .card{background:var(--surface-2); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:16px;}
+  .section-label{font-size:12.5px; font-weight:600; color:var(--text-secondary); margin:0 0 12px;}
+  .hint{font-size:11.5px; color:var(--text-muted); margin:0 0 10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:640px){ .row3{grid-template-columns:1fr;} }
+  .file-btn{background:var(--surface-1); border:0.5px dashed var(--border); border-radius:var(--radius-md); padding:9px 14px; font-size:12.5px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; cursor:pointer; justify-content:center; height:36px;}
+  input[type=file]{display:none;}
+  .btn-sync{background:var(--text-accent); color:#fff; border:none; border-radius:var(--radius-pill); height:36px; padding:0 20px; font-size:13px; font-weight:500; width:auto;}
+  .btn-ghost{border:0.5px solid var(--border); background:var(--surface-1); color:var(--text-secondary); border-radius:var(--radius-pill); height:34px; padding:0 12px; font-size:11.5px; width:auto;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;}
+  @media (max-width:640px){ .kpi-grid{grid-template-columns:1fr 1fr;} }
+  .kpi-card{border-radius:var(--radius-lg); padding:14px; background:var(--surface-2); border:0.5px solid var(--border);}
+  .kpi-label{font-size:10.5px; color:var(--text-muted); margin:0 0 3px;}
+  .kpi-num{font-size:21px; font-weight:600; margin:0;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{text-align:left; padding:8px 8px; color:var(--text-secondary); font-weight:500; border-bottom:0.5px solid var(--border); white-space:nowrap;}
+  td{padding:7px 8px; border-bottom:0.5px solid var(--border); vertical-align:middle;}
+  .empty{text-align:center; padding:26px; color:var(--text-muted); font-size:13px;}
+
+  .toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; flex-wrap:wrap;}
+
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--fill-primary); color:var(--on-primary); padding:12px 20px; border-radius:var(--radius-pill); font-size:13px; display:none; align-items:center; gap:8px; z-index:100;}
+  .toast.show{display:flex;}
+  .toast.warn{background:var(--text-danger);}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon"><i class="ti ti-alert-triangle"></i></div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
+    <nav class="navlist">
+      <a class="navitem" href="pi-report.html"><i class="ti ti-chart-bar"></i><span class="navlabel">Report</span></a>
+      <a class="navitem active" href="pi-returns.html"><i class="ti ti-corner-down-left"></i><span class="navlabel">Return</span></a>
+      <a class="navitem" href="pi-claims.html"><i class="ti ti-file-alert"></i><span class="navlabel">Claims</span></a>
+      <a class="navitem" href="pi-documents.html"><i class="ti ti-file-text"></i><span class="navlabel">Documents</span></a>
+      <a class="navitem" href="pi-packing.html"><i class="ti ti-box"></i><span class="navlabel">Packing</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <p class="crumb">Return &amp; Claims / Return</p>
+      <p class="pagetitle">ตีกลับ</p>
+    </div>
+
+    <div class="card">
+      <p class="section-label" style="margin-top:0;">อัปโหลดไฟล์ตีกลับจาก JST</p>
+      <p class="hint">รองรับไฟล์ฟอร์แมตเดียวกับที่ดึงจาก JST — เช็คพรีวิวก่อนกดบันทึกจริง กันเลขซ้ำให้อัตโนมัติ</p>
+      <div class="row3">
+        <div><label>วันที่ตีกลับ (ของไฟล์นี้)</label><input type="date" id="returnDate"></div>
+        <div style="grid-column:span 2;"><label>&nbsp;</label><label class="file-btn"><i class="ti ti-file-upload"></i><span id="fileLabel">เลือกไฟล์ Excel/CSV จาก JST</span><input type="file" id="uploadFile" accept=".csv,.txt,.xlsx,.xls"></label></div>
+      </div>
+      <div id="uploadPreviewBox" style="display:none;">
+        <p class="section-label" style="margin:16px 0 8px;">พรีวิวก่อนบันทึก</p>
+        <p class="hint" id="uploadPreviewSummary" style="margin:0 0 10px;"></p>
+        <div class="card" style="padding:0; overflow-x:auto; margin-bottom:12px;">
+          <table>
+            <thead><tr><th>ชื่อสินค้า</th><th>จำนวนชิ้น</th><th>จำนวนออเดอร์</th></tr></thead>
+            <tbody id="uploadPreviewBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-sync" id="saveUploadBtn"><i class="ti ti-device-floppy"></i> บันทึก</button>
+          <button class="btn-ghost" id="cancelUploadBtn">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="background:var(--bg-danger); border:none;">
+      <p class="section-label" style="margin:0 0 10px; color:var(--text-danger);">ล้างข้อมูล (ลบถาวร กู้คืนไม่ได้)</p>
+      <div class="row3" style="align-items:end;">
+        <div><label>ลบเฉพาะช่วงวันที่ (เว้นว่างได้ถ้าไม่ระบุ)</label>
+          <div style="display:flex; gap:6px;">
+            <input type="date" id="wipeDateFrom">
+            <input type="date" id="wipeDateTo">
+          </div>
+        </div>
+        <div><button class="btn-sync" id="wipeByDateBtn" style="background:var(--text-danger); width:100%;">ลบตามช่วงวันที่นี้</button></div>
+        <div><button class="btn-sync" id="wipeAllBtn" style="background:var(--text-danger); width:100%;"><i class="ti ti-trash"></i> ล้างข้อมูลทั้งหมด</button></div>
+      </div>
+    </div>
+
+    <div id="prevMonthBanner" class="card" style="display:none; background:var(--bg-warning); border:none;">
+      <p style="font-size:12.5px; margin:0 0 8px; color:var(--text-warning);" id="prevMonthText"></p>
+      <button class="btn-sync" id="exportPrevMonthBtn"><i class="ti ti-file-download"></i> ส่งออกเดือนก่อนหน้าเป็นไฟล์ + เริ่มเดือนใหม่</button>
+    </div>
+
+    <p class="section-label" style="margin:0 0 8px;" id="currentMonthLabel">สรุปเดือนนี้</p>
+    <div class="kpi-grid">
+      <div class="kpi-card"><p class="kpi-label">ตีกลับเดือนนี้</p><p class="kpi-num disp" id="kpiTotal">0</p></div>
+      <div class="kpi-card"><p class="kpi-label">สินค้าที่ตีกลับ</p><p class="kpi-num disp" id="kpiProducts">0</p></div>
+      <div class="kpi-card"><p class="kpi-label">เลขออเดอร์ที่เกี่ยวข้อง</p><p class="kpi-num disp" id="kpiOrders">0</p></div>
+    </div>
+
+    <p class="section-label">สรุปยอดตามสินค้า (เดือนนี้)</p>
+    <div class="card" style="padding:0; overflow-x:auto;">
+      <table>
+        <thead><tr><th>ชื่อสินค้า</th><th>จำนวนชิ้น</th><th>จำนวนออเดอร์</th></tr></thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+      <div class="empty" id="summaryEmpty">ยังไม่มีข้อมูล — อัปโหลดไฟล์ด้านบนก่อน</div>
+    </div>
+
+    <div class="toolbar" style="margin-top:20px;">
+      <p class="section-label" style="margin:0;">รายละเอียดทั้งหมด</p>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="search" placeholder="ค้นหา..." style="max-width:200px;">
+        <input type="date" id="dateFrom" style="width:auto;">
+        <span style="color:var(--text-muted); font-size:12px;">-</span>
+        <input type="date" id="dateTo" style="width:auto;">
+        <button class="btn-ghost" id="clearRangeBtn">ล้างช่วงวันที่</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0; overflow-x:auto;">
+      <table>
+        <thead><tr><th>เลขพัสดุ</th><th>เลขออเดอร์</th><th>ชื่อสินค้า</th><th>จำนวน</th><th>วันที่ตีกลับ</th><th style="width:40px;"></th></tr></thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+      <div class="empty" id="detailEmpty">ยังไม่มีข้อมูล</div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toastMsg"></span></div>
+
+<script>
+function showToast(msg, warn){
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast show' + (warn ? ' warn' : '');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+document.getElementById('returnDate').value = new Date().toISOString().slice(0,10);
+
+var returnsData = [];
+function loadData(){
+  try{ returnsData = JSON.parse(localStorage.getItem('pi_returns_data') || '[]'); } catch(e){ returnsData = []; }
+}
+function saveData(){
+  try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){}
+}
+
+var pendingUpload = [];
+document.getElementById('uploadFile').addEventListener('change', function(e){
+  var f = e.target.files[0];
+  document.getElementById('fileLabel').textContent = f ? f.name : 'เลือกไฟล์ Excel/CSV จาก JST';
+  if(!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      var wb = XLSX.read(ev.target.result, {type:'array'});
+      var data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      if(!data.length){ showToast('ไฟล์ว่างเปล่า', true); return; }
+      var cols = Object.keys(data[0]);
+      var trackCol = cols.find(function(c){return c.indexOf('เลขพัสดุ')!==-1;});
+      var prodCol = cols.find(function(c){return c.indexOf('ชื่อสินค้า')!==-1;});
+      var orderCol = cols.find(function(c){return c.indexOf('หมายเลขออเดอร์ภายใน')!==-1;});
+      var qtyCol = cols.find(function(c){return c==='จำนวน';});
+      if(!trackCol || !prodCol){ showToast('ไม่พบคอลัมน์ "เลขพัสดุ" หรือ "ชื่อสินค้า" ในไฟล์', true); return; }
+      var date = document.getElementById('returnDate').value;
+      var existingKeys = {};
+      returnsData.forEach(function(r){ existingKeys[r.tracking+'|'+r.product] = true; });
+      pendingUpload = [];
+      data.forEach(function(row){
+        var tracking = String(row[trackCol]||'').trim();
+        var product = String(row[prodCol]||'').trim();
+        if(!tracking || !product) return;
+        var key = tracking+'|'+product;
+        if(existingKeys[key]) return; // กันซ้ำเฉพาะเลขพัสดุ+สินค้าคู่เดียวกัน (ออเดอร์เดียวหลายสินค้าจะไม่ถูกตัดทิ้ง)
+        if(pendingUpload.some(function(p){return (p.tracking+'|'+p.product)===key;})) return; // กันซ้ำในไฟล์เดียวกันเอง
+        pendingUpload.push({
+          tracking: tracking,
+          order: orderCol ? String(row[orderCol]||'').trim() : '',
+          product: product,
+          qty: qtyCol ? (parseFloat(row[qtyCol])||1) : 1,
+          date: date
+        });
+      });
+
+      if(!pendingUpload.length){
+        showToast('ไม่มีรายการใหม่ในไฟล์นี้ (อาจซ้ำกับที่บันทึกไว้แล้วทั้งหมด)', true);
+        document.getElementById('uploadPreviewBox').style.display = 'none';
+        return;
+      }
+
+      var byProduct = {};
+      pendingUpload.forEach(function(r){
+        if(!byProduct[r.product]) byProduct[r.product] = {qty:0, orders:{}};
+        byProduct[r.product].qty += r.qty;
+        if(r.order) byProduct[r.product].orders[r.order] = true;
+      });
+      var entries = Object.keys(byProduct).map(function(p){ return {product:p, qty:byProduct[p].qty, orderCount:Object.keys(byProduct[p].orders).length}; });
+      entries.sort(function(a,b){ return b.qty - a.qty; });
+
+      document.getElementById('uploadPreviewSummary').textContent = 'พบ ' + pendingUpload.length + ' รายการใหม่ (' + entries.length + ' สินค้า) — เช็คให้ดีก่อนกดบันทึก';
+      document.getElementById('uploadPreviewBody').innerHTML = entries.map(function(en){
+        return '<tr><td>'+en.product+'</td><td>'+en.qty+'</td><td>'+en.orderCount+'</td></tr>';
+      }).join('');
+      document.getElementById('uploadPreviewBox').style.display = 'block';
+    } catch(err){ showToast('อ่านไฟล์ไม่สำเร็จ', true); }
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+document.getElementById('saveUploadBtn').addEventListener('click', function(){
+  if(!pendingUpload.length) return;
+  pendingUpload.forEach(function(r){ returnsData.push(r); });
+  var added = pendingUpload.length;
+  saveData();
+  renderAll();
+  pendingUpload = [];
+  document.getElementById('uploadPreviewBox').style.display = 'none';
+  document.getElementById('uploadFile').value = '';
+  document.getElementById('fileLabel').textContent = 'เลือกไฟล์ Excel/CSV จาก JST';
+  showToast('บันทึกข้อมูลตีกลับแล้ว ' + added + ' รายการ');
+});
+document.getElementById('cancelUploadBtn').addEventListener('click', function(){
+  pendingUpload = [];
+  document.getElementById('uploadPreviewBox').style.display = 'none';
+  document.getElementById('uploadFile').value = '';
+  document.getElementById('fileLabel').textContent = 'เลือกไฟล์ Excel/CSV จาก JST';
+});
+
+function currentMonthKey(){
+  var now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+}
+var thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+function monthLabel(key){
+  var parts = key.split('-');
+  return thaiMonths[parseInt(parts[1])-1] + ' ' + (parseInt(parts[0])+543);
+}
+
+function renderAll(){
+  var curMonth = currentMonthKey();
+  document.getElementById('currentMonthLabel').textContent = 'สรุปเดือนนี้ (' + monthLabel(curMonth) + ')';
+  var thisMonthData = returnsData.filter(function(r){ return r.date && r.date.slice(0,7) === curMonth; });
+
+  var uniqueParcels = new Set(thisMonthData.map(function(r){ return r.tracking; }));
+  document.getElementById('kpiTotal').textContent = uniqueParcels.size.toLocaleString();
+  var byProduct = {};
+  var orderSet = {};
+  thisMonthData.forEach(function(r){
+    if(!byProduct[r.product]) byProduct[r.product] = {qty:0, orders:{}};
+    byProduct[r.product].qty += r.qty;
+    if(r.order){ byProduct[r.product].orders[r.order] = true; orderSet[r.order] = true; }
+  });
+  var entries = Object.keys(byProduct).map(function(p){ return {product:p, qty:byProduct[p].qty, orderCount:Object.keys(byProduct[p].orders).length}; });
+  entries.sort(function(a,b){ return b.qty - a.qty; });
+  document.getElementById('kpiProducts').textContent = entries.length;
+  document.getElementById('kpiOrders').textContent = Object.keys(orderSet).length;
+
+  document.getElementById('summaryEmpty').style.display = entries.length ? 'none' : 'block';
+  document.getElementById('summaryBody').innerHTML = entries.map(function(e){
+    return '<tr><td>'+e.product+'</td><td><b>'+e.qty+'</b></td><td>'+e.orderCount+'</td></tr>';
+  }).join('');
+
+  renderPrevMonthBanner(curMonth);
+  renderDetail();
+}
+
+function renderPrevMonthBanner(curMonth){
+  var oldMonths = {};
+  returnsData.forEach(function(r){
+    if(r.date && r.date.slice(0,7) !== curMonth) oldMonths[r.date.slice(0,7)] = (oldMonths[r.date.slice(0,7)]||0) + 1;
+  });
+  var keys = Object.keys(oldMonths).sort();
+  var banner = document.getElementById('prevMonthBanner');
+  if(!keys.length){ banner.style.display = 'none'; return; }
+  var totalOld = keys.reduce(function(s,k){ return s+oldMonths[k]; }, 0);
+  var monthList = keys.map(function(k){ return monthLabel(k) + ' (' + oldMonths[k] + ' รายการ)'; }).join(', ');
+  document.getElementById('prevMonthText').textContent = 'มีข้อมูลเดือนก่อนหน้าค้างอยู่ ' + totalOld + ' รายการ — ' + monthList;
+  banner.style.display = 'block';
+}
+
+function exportToCSV(rows, filename){
+  var header = 'เลขพัสดุ,เลขออเดอร์,ชื่อสินค้า,จำนวน,วันที่ตีกลับ\n';
+  var body = rows.map(function(r){
+    return [r.tracking, r.order||'', '"'+r.product.replace(/"/g,'""')+'"', r.qty, r.date||''].join(',');
+  }).join('\n');
+  var blob = new Blob(['\uFEFF' + header + body], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportPrevMonthBtn').addEventListener('click', function(){
+  var curMonth = currentMonthKey();
+  var oldRows = returnsData.filter(function(r){ return r.date && r.date.slice(0,7) !== curMonth; });
+  if(!oldRows.length) return;
+  if(!confirm('ส่งออก ' + oldRows.length + ' รายการเป็นไฟล์ แล้วลบออกจากระบบ (เริ่มเดือนใหม่)?\n\nไฟล์จะถูกดาวน์โหลดไว้ก่อน กดยืนยันแล้วจะลบออกจากเว็บทันที')) return;
+  var oldMonthKeys = Array.from(new Set(oldRows.map(function(r){ return r.date.slice(0,7); }))).sort();
+  var filename = 'ตีกลับ_' + oldMonthKeys.join('_') + '.csv';
+  exportToCSV(oldRows, filename);
+  returnsData = returnsData.filter(function(r){ return r.date && r.date.slice(0,7) === curMonth; });
+  saveData();
+  renderAll();
+  showToast('ส่งออก ' + oldRows.length + ' รายการแล้ว และเริ่มเดือนใหม่');
+});
+
+function renderDetail(){
+  var q = document.getElementById('search').value.trim().toLowerCase();
+  var from = document.getElementById('dateFrom').value;
+  var to = document.getElementById('dateTo').value;
+  var visible = returnsData.map(function(r,i){ return {r:r, idx:i}; }).filter(function(x){
+    var r = x.r;
+    if(from && (!r.date || r.date < from)) return false;
+    if(to && (!r.date || r.date > to)) return false;
+    if(q && !(r.tracking.toLowerCase().includes(q) || (r.order||'').toLowerCase().includes(q) || r.product.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  visible.sort(function(a,b){ return (b.r.date||'').localeCompare(a.r.date||''); });
+  document.getElementById('detailEmpty').style.display = returnsData.length ? 'none' : 'block';
+  document.getElementById('detailBody').innerHTML = visible.map(function(x){
+    var r = x.r, idx = x.idx;
+    return '<tr><td class="mono">'+r.tracking+'</td><td class="mono">'+(r.order||'-')+'</td><td>'+r.product+'</td><td>'+r.qty+'</td>' +
+      '<td class="mono" style="font-size:11px; color:var(--text-muted);">'+(r.date||'-')+'</td>' +
+      '<td><i class="ti ti-trash" data-del="'+idx+'" style="color:var(--text-muted); cursor:pointer;"></i></td></tr>';
+  }).join('');
+  document.querySelectorAll('[data-del]').forEach(function(el){
+    el.addEventListener('click', function(){
+      returnsData.splice(parseInt(el.getAttribute('data-del')), 1);
+      saveData();
+      renderAll();
+    });
+  });
+}
+document.getElementById('search').addEventListener('input', renderDetail);
+document.getElementById('dateFrom').addEventListener('change', renderDetail);
+document.getElementById('dateTo').addEventListener('change', renderDetail);
+document.getElementById('clearRangeBtn').addEventListener('click', function(){
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  renderDetail();
+});
+
+document.getElementById('wipeByDateBtn').addEventListener('click', function(){
+  var from = document.getElementById('wipeDateFrom').value;
+  var to = document.getElementById('wipeDateTo').value;
+  if(!from && !to){ showToast('ระบุช่วงวันที่ก่อน ถ้าจะลบทั้งหมดใช้ปุ่ม "ล้างข้อมูลทั้งหมด" แทน', true); return; }
+  var toDelete = returnsData.filter(function(r){
+    if(from && (!r.date || r.date < from)) return false;
+    if(to && (!r.date || r.date > to)) return false;
+    return true;
+  });
+  if(!toDelete.length){ showToast('ไม่มีข้อมูลในช่วงวันที่นี้', true); return; }
+  if(!confirm('ลบข้อมูลตีกลับ ' + toDelete.length + ' รายการในช่วงวันที่นี้ทิ้งถาวร?\n\nกู้คืนไม่ได้ — ไม่กระทบข้อมูลในหน้าเคลมแต่อย่างใด')) return;
+  returnsData = returnsData.filter(function(r){
+    if(from && (!r.date || r.date < from)) return true;
+    if(to && (!r.date || r.date > to)) return true;
+    return false;
+  });
+  saveData();
+  document.getElementById('wipeDateFrom').value = '';
+  document.getElementById('wipeDateTo').value = '';
+  renderAll();
+  showToast('ลบไปแล้ว ' + toDelete.length + ' รายการ — อัปโหลดไฟล์ใหม่ได้เลย');
+});
+
+document.getElementById('wipeAllBtn').addEventListener('click', function(){
+  if(!returnsData.length){ showToast('ไม่มีข้อมูลให้ลบ', true); return; }
+  if(!confirm('ล้างข้อมูลตีกลับทั้งหมด ' + returnsData.length + ' รายการทิ้งถาวร?\n\nกู้คืนไม่ได้ — ไม่กระทบข้อมูลในหน้าเคลมแต่อย่างใด')) return;
+  returnsData = [];
+  saveData();
+  renderAll();
+  showToast('ล้างข้อมูลตีกลับทั้งหมดแล้ว — อัปโหลดไฟล์ใหม่ได้เลย');
+});
+
+loadData();
+renderAll();
+</script>
+</body>
+</html>

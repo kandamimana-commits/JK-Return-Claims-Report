@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JK888 — Return & Claims / Packing</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --page-bg:#FAFAF9; --surface-1:#F4F3F1; --surface-2:#FFFFFF;
+    --text-primary:#1E1B29; --text-secondary:#6B6478; --text-muted:#A39CB0;
+    --border:rgba(31,27,42,0.09);
+    --fill-primary:#17151F; --on-primary:#FFFFFF;
+    --bg-success:#E1F5EE; --text-success:#085041;
+    --bg-danger:#FAECE7;  --text-danger:#4A1B0C;
+    --bg-warning:#FFF3DE; --text-warning:#B4670A;
+    --bg-pro:#FBEAF0;     --text-pro:#4B1528;
+    --bg-accent:#EEEDFE;  --text-accent:#3C3489;
+    --radius-lg:12px; --radius-md:10px; --radius-pill:999px;
+    --font-display:'Poppins',sans-serif; --font-body:'Inter',-apple-system,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page-bg:#131019; --surface-1:#1C1826; --surface-2:#211D2C;
+      --text-primary:#F3F1FA; --text-secondary:#B7AFC7; --text-muted:#7A7289;
+      --border:rgba(243,241,250,0.12);
+      --fill-primary:#F3F1FA; --on-primary:#17151F;
+      --bg-success:#04342C; --text-success:#5DCAA5;
+      --bg-danger:#4A1B0C;  --text-danger:#F0997B;
+      --bg-warning:#412402; --text-warning:#FAC775;
+      --bg-pro:#4B1528;     --text-pro:#ED93B1;
+      --bg-accent:#26215C;  --text-accent:#AFA9EC;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--page-bg); color:var(--text-primary); font-family:var(--font-body); -webkit-font-smoothing:antialiased; }
+  input,select{ height:36px; border-radius:var(--radius-md); border:0.5px solid var(--border); background:var(--surface-2); color:var(--text-primary); padding:0 12px; font-size:13.5px; font-family:inherit; width:100%; }
+  button{font-family:inherit; cursor:pointer;}
+  label{font-size:12px; color:var(--text-secondary); display:block; margin:0 0 5px;}
+  .mono{font-family:var(--font-mono);}
+  .disp{font-family:var(--font-display); letter-spacing:-0.01em;}
+
+  .shell{display:flex; min-height:100vh;}
+  .sidebar{width:180px; flex-shrink:0; background:var(--surface-1); padding:18px 12px; border-right:0.5px solid var(--border);}
+  @media (max-width:768px){ .shell{flex-direction:column;} .sidebar{width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border-right:none; border-bottom:0.5px solid var(--border);} .sidebar .navlist{display:flex; flex-direction:row; gap:4px; overflow-x:auto;} .sidebar .navlabel{display:none;} }
+  .brand{display:flex; align-items:center; gap:8px; margin-bottom:20px;}
+  @media (max-width:768px){ .brand{margin-bottom:0;} }
+  .brand-icon{width:28px; height:28px; border-radius:8px; background:var(--fill-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .brand-icon i{color:var(--on-primary); font-size:15px;}
+  .brand-name{font-size:13px; font-weight:600; margin:0; line-height:1.3;}
+  .navlist{display:flex; flex-direction:column; gap:2px;}
+  .navitem{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--text-secondary); font-size:13px; white-space:nowrap;}
+  .navitem i{font-size:16px; flex-shrink:0;}
+  .navitem.active{background:var(--bg-accent); color:var(--text-accent);}
+
+  .main{flex:1; padding:22px 26px; min-width:0;}
+  @media (max-width:768px){ .main{padding:16px;} }
+  .topbar{margin-bottom:18px;}
+  .crumb{font-size:11px; color:var(--text-muted); margin:0;}
+  .pagetitle{font-size:19px; font-weight:600; margin:2px 0 0; font-family:var(--font-display);}
+
+  .card{background:var(--surface-2); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:16px;}
+  .section-label{font-size:12.5px; font-weight:600; color:var(--text-secondary); margin:0 0 12px;}
+  .hint{font-size:11.5px; color:var(--text-muted); margin:0 0 10px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:640px){ .row2, .row3{grid-template-columns:1fr;} }
+  .file-btn{background:var(--surface-1); border:0.5px dashed var(--border); border-radius:var(--radius-md); padding:9px 14px; font-size:12.5px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; cursor:pointer; justify-content:center; height:36px;}
+  .suggest-wrap{position:relative;}
+  .suggest-panel{position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface-2); border:0.5px solid var(--border); border-radius:var(--radius-md); box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:220px; overflow-y:auto; z-index:50;}
+  .suggest-item{padding:9px 12px; font-size:13px; cursor:pointer;}
+  .suggest-item:hover, .suggest-item.hl{background:var(--bg-accent); color:var(--text-accent);}
+  input[type=file]{display:none;}
+  .btn-sync{background:var(--text-accent); color:#fff; border:none; border-radius:var(--radius-pill); height:36px; padding:0 20px; font-size:13px; font-weight:500; width:auto;}
+  .btn-ghost{border:0.5px solid var(--border); background:var(--surface-1); color:var(--text-secondary); border-radius:var(--radius-pill); height:34px; padding:0 12px; font-size:11.5px; width:auto;}
+  .tabs{display:flex; gap:6px; margin-bottom:16px;}
+  .tab-btn{font-size:12.5px; padding:8px 15px; border-radius:var(--radius-pill); border:0.5px solid var(--border); background:var(--surface-2); color:var(--text-secondary);}
+  .tab-btn.active{background:var(--fill-primary); color:var(--on-primary); border-color:transparent;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{text-align:left; padding:8px; color:var(--text-secondary); font-weight:500; border-bottom:0.5px solid var(--border); white-space:nowrap;}
+  td{padding:7px 8px; border-bottom:0.5px solid var(--border); vertical-align:middle;}
+  .empty{text-align:center; padding:26px; color:var(--text-muted); font-size:13px;}
+  .toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; flex-wrap:wrap;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px; margin-bottom:16px;}
+  .kpi-card{border-radius:var(--radius-lg); padding:14px; background:var(--surface-2); border:0.5px solid var(--border);}
+  .kpi-label{font-size:10.5px; color:var(--text-muted); margin:0 0 3px;}
+  .kpi-num{font-size:22px; font-weight:600; margin:0;}
+
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--fill-primary); color:var(--on-primary); padding:12px 20px; border-radius:var(--radius-pill); font-size:13px; display:none; align-items:center; gap:8px; z-index:100;}
+
+  .modal-overlay{position:fixed; inset:0; background:rgba(20,17,10,0.5); display:none; align-items:center; justify-content:center; z-index:200; padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:var(--surface-2); border-radius:var(--radius-lg); padding:20px; max-width:640px; width:100%; max-height:85vh; display:flex; flex-direction:column;}
+  .modal-title{font-size:15px; font-weight:600; margin:0 0 4px;}
+  .modal-sub{font-size:12px; color:var(--text-muted); margin:0 0 14px;}
+  .modal-list{overflow-y:auto; flex:1; margin-bottom:14px;}
+  .unknown-item{border:0.5px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:10px;}
+  .unknown-item-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .unknown-item-name{font-size:13px; font-weight:600;}
+  .unknown-item-count{font-size:11px; color:var(--text-muted);}
+  .resolve-tabs{display:flex; gap:4px; margin-bottom:10px;}
+  .resolve-tab{font-size:11px; padding:5px 10px; border-radius:999px; border:0.5px solid var(--border); background:var(--surface-1); color:var(--text-secondary);}
+  .resolve-tab.active{background:var(--fill-primary); color:var(--on-primary); border-color:transparent;}
+  .resolve-pane{display:none;}
+  .resolve-pane.active{display:block;}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end;}
+  .btn-cancel{background:var(--surface-1); color:var(--text-secondary); border:none; border-radius:var(--radius-pill); height:36px; padding:0 18px; font-size:13px; width:auto;}
+  .toast.show{display:flex;}
+  .toast.warn{background:var(--text-danger);}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon"><i class="ti ti-alert-triangle"></i></div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
+    <nav class="navlist">
+      <a class="navitem" href="pi-report.html"><i class="ti ti-chart-bar"></i><span class="navlabel">Report</span></a>
+      <a class="navitem" href="pi-returns.html"><i class="ti ti-corner-down-left"></i><span class="navlabel">Return</span></a>
+      <a class="navitem" href="pi-claims.html"><i class="ti ti-file-alert"></i><span class="navlabel">Claims</span></a>
+      <a class="navitem" href="pi-documents.html"><i class="ti ti-file-text"></i><span class="navlabel">Documents</span></a>
+      <a class="navitem active" href="pi-packing.html"><i class="ti ti-box"></i><span class="navlabel">Packing</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <p class="crumb">Return &amp; Claims / Packing</p>
+      <p class="pagetitle">Packing</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-ptab="manual">กรอกเอง</button>
+      <button class="tab-btn" data-ptab="products">รายชื่อสินค้า</button>
+    </div>
+
+    <div id="ptab-manual">
+      <div class="card">
+        <p class="section-label" style="margin-top:0;">ข้อมูลของรอบนี้ (ค้างไว้จนกว่าจะเปลี่ยนหรือบันทึกจบวัน)</p>
+        <div class="row3">
+          <div><label>วันที่แพ็คเสร็จ</label><input type="date" id="manualDate"></div>
+          <div><label>คนแพ็ค</label><select id="manualPacker"></select></div>
+          <div><label>แนบรูปหลักฐานจากคนแพ็ค (ถ้ามี)</label><label class="file-btn"><i class="ti ti-upload"></i><span id="manualPhotoLabel">เลือกรูป</span><input type="file" id="manualPhoto" accept="image/*"></label></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label" style="margin-top:0;">เพิ่มสินค้าที่แพ็ค</p>
+        <div class="row2" style="margin-bottom:10px;">
+          <div class="suggest-wrap"><label>ชื่อสินค้า</label><input type="text" id="manualProduct" autocomplete="off" placeholder="เช่น กล่องสบู่"><div id="productSuggest" class="suggest-panel" style="display:none;"></div></div>
+          <div><label>จำนวนที่แพ็ค</label><input type="number" id="manualQty" placeholder="เช่น 5"></div>
+        </div>
+        <button class="btn-sync" id="addManualProductBtn">บันทึก 1 สินค้า</button>
+      </div>
+
+      <p class="section-label">รายการที่เพิ่มไว้ในรอบนี้</p>
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table>
+          <thead><tr><th>ชื่อสินค้า</th><th>จำนวน</th><th style="width:40px;"></th></tr></thead>
+          <tbody id="manualListBody"></tbody>
+        </table>
+        <div class="empty" id="manualListEmpty">ยังไม่มีรายการ — เพิ่มสินค้าด้านบนก่อน</div>
+      </div>
+      <button class="btn-sync" id="saveManualAllBtn" style="margin-top:12px; background:var(--fill-primary);">บันทึกทั้งหมด (เก็บเป็นข้อมูลแบ็กอัพ)</button>
+
+      <p class="section-label" style="margin-top:22px;">สรุปยอดต่อคนแพ็ค</p>
+      <div class="toolbar">
+        <input type="date" id="summaryDate" style="max-width:200px;">
+        <button class="btn-ghost" id="clearSummaryDateBtn">ล้างวันที่ (ดูทั้งหมด)</button>
+      </div>
+      <div class="kpi-grid" id="packerSummaryGrid"></div>
+    </div>
+
+    <div id="ptab-products" style="display:none;">
+      <div class="card">
+        <p class="section-label" style="margin-top:0;">อัปโหลดรายชื่อสินค้า</p>
+        <p class="hint">ส่งออกชีทสินค้าเป็น Excel/CSV จากกูเกิ้ลชีทเอง (File → Download) แล้วอัปโหลดไฟล์นั้นที่นี่ — ใช้เป็นตัวช่วยเสนอชื่อสินค้าให้เลือกตอนกรอกในแท็บ "กรอกเอง" กันพิมพ์ชื่อผิด/ไม่ตรงกัน อัปโหลดไฟล์ใหม่เมื่อไหร่ก็ได้เพื่ออัปเดตรายชื่อ (ไฟล์ใหม่จะแทนที่รายชื่อเดิมทั้งหมด)</p>
+        <label class="file-btn"><i class="ti ti-file-upload"></i><span id="productListFileLabel">เลือกไฟล์ Excel/CSV</span><input type="file" id="productListFile" accept=".csv,.txt,.xlsx,.xls"></label>
+        <p class="hint" id="productListStatus" style="margin:10px 0 0;"></p>
+      </div>
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table>
+          <thead><tr><th>ชื่อสินค้า</th><th style="width:40px;"></th></tr></thead>
+          <tbody id="productListBody"></tbody>
+        </table>
+        <div class="empty" id="productListEmpty">ยังไม่มีรายชื่อสินค้า</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</div>
+
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toastMsg"></span></div>
+
+<script>
+function showToast(msg, warn){
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast show' + (warn ? ' warn' : '');
+  setTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+document.getElementById('summaryDate').value = new Date().toISOString().slice(0,10);
+
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    var t = btn.getAttribute('data-ptab');
+    document.getElementById('ptab-manual').style.display = (t==='manual') ? 'block' : 'none';
+    document.getElementById('ptab-products').style.display = (t==='products') ? 'block' : 'none';
+    if(t === 'manual') populateManualPackerSelect();
+  });
+});
+
+// ===== รายชื่อสินค้า (ใช้เป็น autocomplete ตอนกรอกเอง) =====
+function getProductList(){
+  try{ return JSON.parse(localStorage.getItem('pi_packing_products') || '[]'); } catch(e){ return []; }
+}
+function saveProductList(list){ try{ localStorage.setItem('pi_packing_products', JSON.stringify(list)); } catch(e){} }
+
+function renderProductList(){
+  var list = getProductList();
+  document.getElementById('productListEmpty').style.display = list.length ? 'none' : 'block';
+  document.getElementById('productListBody').innerHTML = list.map(function(name, i){
+    return '<tr><td>'+name+'</td><td><i class="ti ti-trash" data-delprod="'+i+'" style="color:var(--text-muted); cursor:pointer;"></i></td></tr>';
+  }).join('');
+  document.querySelectorAll('[data-delprod]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var list2 = getProductList();
+      list2.splice(parseInt(el.getAttribute('data-delprod')), 1);
+      saveProductList(list2);
+      renderProductList();
+      populateProductDatalist();
+    });
+  });
+  var statusEl = document.getElementById('productListStatus');
+  statusEl.textContent = list.length ? ('มีรายชื่อสินค้าอยู่ ' + list.length + ' รายการ') : '';
+}
+
+var productMatches = [];
+var productHl = -1;
+function populateProductDatalist(){
+  // เก็บไว้เผื่อโค้ดอื่นเรียก แต่ตัว dropdown จริงกรองสดจาก getProductList() ทุกครั้งที่พิมพ์
+}
+function renderProductSuggest(query){
+  var list = getProductList();
+  var q = (query||'').trim().toLowerCase();
+  productMatches = q ? list.filter(function(n){ return n.toLowerCase().includes(q); }) : list;
+  productHl = productMatches.length ? 0 : -1;
+  var panel = document.getElementById('productSuggest');
+  if(!productMatches.length){ panel.style.display = 'none'; panel.innerHTML=''; return; }
+  panel.innerHTML = productMatches.map(function(n, i){
+    return '<div class="suggest-item'+(i===0?' hl':'')+'" data-i="'+i+'">'+n+'</div>';
+  }).join('');
+  panel.style.display = 'block';
+  panel.querySelectorAll('.suggest-item').forEach(function(el){
+    el.addEventListener('mousedown', function(ev){
+      ev.preventDefault();
+      selectProductSuggest(parseInt(el.getAttribute('data-i')));
+    });
+  });
+}
+function updateProductHl(){
+  document.querySelectorAll('#productSuggest .suggest-item').forEach(function(el, i){
+    el.classList.toggle('hl', i === productHl);
+  });
+  var hlEl = document.querySelector('#productSuggest .suggest-item.hl');
+  if(hlEl) hlEl.scrollIntoView({block:'nearest'});
+}
+function selectProductSuggest(i){
+  if(i < 0 || i >= productMatches.length) return;
+  document.getElementById('manualProduct').value = productMatches[i];
+  document.getElementById('productSuggest').style.display = 'none';
+  document.getElementById('manualQty').focus();
+}
+document.getElementById('manualProduct').addEventListener('input', function(){
+  renderProductSuggest(this.value);
+});
+document.getElementById('manualProduct').addEventListener('focus', function(){
+  renderProductSuggest(this.value);
+});
+document.getElementById('manualProduct').addEventListener('keydown', function(e){
+  var panel = document.getElementById('productSuggest');
+  if(panel.style.display === 'none' || !productMatches.length) return;
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    productHl = Math.min(productHl + 1, productMatches.length - 1);
+    updateProductHl();
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    productHl = Math.max(productHl - 1, 0);
+    updateProductHl();
+  } else if(e.key === 'Enter'){
+    if(productHl >= 0){
+      e.preventDefault();
+      selectProductSuggest(productHl);
+    }
+  } else if(e.key === 'Escape'){
+    panel.style.display = 'none';
+  }
+});
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.suggest-wrap')) document.getElementById('productSuggest').style.display = 'none';
+});
+
+document.getElementById('productListFile').addEventListener('change', function(e){
+  var f = e.target.files[0];
+  document.getElementById('productListFileLabel').textContent = f ? f.name : 'เลือกไฟล์ Excel/CSV';
+  if(!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      var wb = XLSX.read(ev.target.result, {type:'array'});
+      var data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      if(!data.length){ showToast('ไฟล์ว่างเปล่า', true); return; }
+      var cols = Object.keys(data[0]);
+      // หาคอลัมน์ชื่อสินค้า — ลองคอลัมน์แรกที่ชื่อมีคำว่า "สินค้า" หรือ "ชื่อ" ถ้าไม่เจอใช้คอลัมน์แรกสุด
+      var nameCol = cols.find(function(c){ return c.indexOf('สินค้า')!==-1 || c.indexOf('ชื่อ')!==-1; }) || cols[0];
+      var names = data.map(function(row){ return String(row[nameCol]||'').trim(); }).filter(Boolean);
+      names = Array.from(new Set(names)); // ตัดชื่อซ้ำ
+      if(!names.length){ showToast('อ่านไฟล์ไม่พบชื่อสินค้า', true); return; }
+      saveProductList(names);
+      renderProductList();
+      populateProductDatalist();
+      showToast('อัปเดตรายชื่อสินค้าแล้ว ' + names.length + ' รายการ (แทนที่รายชื่อเดิมทั้งหมด)');
+    } catch(err){ showToast('อ่านไฟล์ไม่สำเร็จ', true); }
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+// ===== สรุปยอดต่อคนแพ็ค (นับจากข้อมูลที่กรอกเองเท่านั้น) =====
+function renderPackerSummary(){
+  var dateF = document.getElementById('summaryDate').value;
+  var data = [];
+  try{ data = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ data = []; }
+  var filtered = dateF ? data.filter(function(r){ return r.date === dateF; }) : data;
+  var counts = {};
+  filtered.forEach(function(r){ counts[r.packer] = (counts[r.packer]||0) + (r.totalQty||0); });
+  var grid = document.getElementById('packerSummaryGrid');
+  var keys = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+  if(!keys.length){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">ยังไม่มีข้อมูล'+(dateF ? 'ในวันที่นี้' : '')+'</div>';
+    return;
+  }
+  grid.innerHTML = keys.map(function(k){
+    return '<div class="kpi-card"><p class="kpi-label">'+k+'</p><p class="kpi-num disp">'+counts[k]+'</p></div>';
+  }).join('');
+}
+document.getElementById('summaryDate').addEventListener('change', renderPackerSummary);
+document.getElementById('clearSummaryDateBtn').addEventListener('click', function(){
+  document.getElementById('summaryDate').value = '';
+  renderPackerSummary();
+});
+
+// ===== กรอกเอง (แมนนวล พร้อมรูปหลักฐาน) =====
+document.getElementById('manualDate').value = new Date().toISOString().slice(0,10);
+var manualList = [];
+var manualPhotoMeta = null;
+
+function packerOptionsFromHistory(){
+  var defaults = ['พรีม','เก็ก','กรุ๊ป','วาวา'];
+  var data = [];
+  try{ data = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ data = []; }
+  var set = new Set(defaults);
+  data.forEach(function(r){ if(r.packer) set.add(r.packer); });
+  return Array.from(set).sort();
+}
+function populateManualPackerSelect(){
+  var sel = document.getElementById('manualPacker');
+  var cur = sel.value;
+  var opts = packerOptionsFromHistory();
+  sel.innerHTML = opts.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+  if(opts.indexOf(cur) !== -1) sel.value = cur;
+}
+
+document.getElementById('manualPhoto').addEventListener('change', function(e){
+  var f = e.target.files[0];
+  if(!f) return;
+  manualPhotoMeta = {name:f.name, size:f.size, uploadedAt:new Date().toLocaleString('th-TH')};
+  document.getElementById('manualPhotoLabel').textContent = f.name;
+  showToast('แนบรูปแล้ว: ' + f.name + ' (เก็บชื่อ+ขนาดไว้ก่อน รอต่อ cloud storage จริงถึงจะเก็บไฟล์ได้)');
+});
+
+function renderManualList(){
+  var body = document.getElementById('manualListBody');
+  document.getElementById('manualListEmpty').style.display = manualList.length ? 'none' : 'block';
+  body.innerHTML = manualList.map(function(item, i){
+    return '<tr><td>'+item.product+'</td><td>'+item.qty+'</td>' +
+      '<td><i class="ti ti-trash" data-delmanual="'+i+'" style="color:var(--text-muted); cursor:pointer;"></i></td></tr>';
+  }).join('');
+  body.querySelectorAll('[data-delmanual]').forEach(function(el){
+    el.addEventListener('click', function(){
+      manualList.splice(parseInt(el.getAttribute('data-delmanual')), 1);
+      renderManualList();
+    });
+  });
+}
+
+document.getElementById('addManualProductBtn').addEventListener('click', function(){
+  var product = document.getElementById('manualProduct').value.trim();
+  var qty = document.getElementById('manualQty').value.trim();
+  if(!product || !qty){ showToast('กรอกชื่อสินค้าและจำนวนก่อน', true); return; }
+  manualList.push({product:product, qty:parseFloat(qty)||0});
+  document.getElementById('manualProduct').value = '';
+  document.getElementById('manualQty').value = '';
+  document.getElementById('manualProduct').focus();
+  renderManualList();
+});
+
+document.getElementById('saveManualAllBtn').addEventListener('click', function(){
+  if(!manualList.length){ showToast('ยังไม่มีรายการที่เพิ่มไว้', true); return; }
+  var date = document.getElementById('manualDate').value;
+  var packer = document.getElementById('manualPacker').value;
+  var existing = [];
+  try{ existing = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ existing = []; }
+  existing.push({
+    date: date, packer: packer, products: manualList.slice(),
+    totalQty: manualList.reduce(function(s,it){ return s+it.qty; }, 0),
+    photo: manualPhotoMeta, savedAt: new Date().toLocaleString('th-TH')
+  });
+  try{ localStorage.setItem('pi_packing_manual', JSON.stringify(existing)); } catch(e){}
+
+  showToast('บันทึกข้อมูลของ ' + packer + ' วันที่ ' + date + ' แล้ว (' + manualList.length + ' สินค้า)');
+  manualList = [];
+  manualPhotoMeta = null;
+  document.getElementById('manualPhoto').value = '';
+  document.getElementById('manualPhotoLabel').textContent = 'เลือกรูป';
+  renderManualList();
+  renderPackerSummary();
+});
+
+populateManualPackerSelect();
+renderProductList();
+populateProductDatalist();
+renderManualList();
+renderPackerSummary();
+</script>
+</body>
+</html>

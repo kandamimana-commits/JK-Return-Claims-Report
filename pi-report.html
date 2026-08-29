@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JK888 — Return & Claims / Report</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page-bg:#FAFAF9; --surface-1:#F4F3F1; --surface-2:#FFFFFF;
+    --text-primary:#1E1B29; --text-secondary:#6B6478; --text-muted:#A39CB0;
+    --border:rgba(31,27,42,0.09);
+    --fill-primary:#17151F; --on-primary:#FFFFFF;
+    --bg-success:#E1F5EE; --text-success:#085041;
+    --bg-danger:#FAECE7;  --text-danger:#4A1B0C;
+    --bg-warning:#FFF3DE; --text-warning:#B4670A;
+    --bg-pro:#FBEAF0;     --text-pro:#4B1528;
+    --bg-accent:#EEEDFE;  --text-accent:#3C3489;
+    --radius-lg:12px; --radius-md:10px; --radius-pill:999px;
+    --font-display:'Poppins',sans-serif; --font-body:'Inter',-apple-system,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page-bg:#131019; --surface-1:#1C1826; --surface-2:#211D2C;
+      --text-primary:#F3F1FA; --text-secondary:#B7AFC7; --text-muted:#7A7289;
+      --border:rgba(243,241,250,0.12);
+      --fill-primary:#F3F1FA; --on-primary:#17151F;
+      --bg-success:#04342C; --text-success:#5DCAA5;
+      --bg-danger:#4A1B0C;  --text-danger:#F0997B;
+      --bg-warning:#412402; --text-warning:#FAC775;
+      --bg-pro:#4B1528;     --text-pro:#ED93B1;
+      --bg-accent:#26215C;  --text-accent:#AFA9EC;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--page-bg); color:var(--text-primary); font-family:var(--font-body); -webkit-font-smoothing:antialiased; }
+  button{font-family:inherit; cursor:pointer;}
+  .mono{font-family:var(--font-mono);}
+  .disp{font-family:var(--font-display); letter-spacing:-0.01em;}
+
+  .shell{display:flex; min-height:100vh;}
+  .sidebar{width:180px; flex-shrink:0; background:var(--surface-1); padding:18px 12px; border-right:0.5px solid var(--border);}
+  @media (max-width:768px){ .shell{flex-direction:column;} .sidebar{width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border-right:none; border-bottom:0.5px solid var(--border);} .sidebar .navlist{display:flex; flex-direction:row; gap:4px;} .sidebar .navlabel{display:none;} }
+  .brand{display:flex; align-items:center; gap:8px; margin-bottom:20px;}
+  @media (max-width:768px){ .brand{margin-bottom:0;} }
+  .brand-icon{width:28px; height:28px; border-radius:8px; background:var(--fill-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .brand-icon i{color:var(--on-primary); font-size:15px;}
+  .brand-name{font-size:13px; font-weight:600; margin:0; line-height:1.3;}
+  .navlist{display:flex; flex-direction:column; gap:2px;}
+  .navitem{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--text-secondary); font-size:13px; white-space:nowrap;}
+  .navitem i{font-size:16px; flex-shrink:0;}
+  .navitem.active{background:var(--bg-accent); color:var(--text-accent);}
+
+  .main{flex:1; padding:22px 26px; min-width:0;}
+  @media (max-width:768px){ .main{padding:16px;} }
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
+  .crumb{font-size:11px; color:var(--text-muted); margin:0;}
+  .pagetitle{font-size:19px; font-weight:600; margin:2px 0 0; font-family:var(--font-display);}
+  .seg{display:inline-flex; background:var(--surface-1); border-radius:var(--radius-pill); padding:3px;}
+  .seg button{border:none; background:transparent; padding:7px 16px; border-radius:var(--radius-pill); font-size:12.5px; color:var(--text-secondary); width:auto;}
+  .seg button.active{background:var(--fill-primary); color:var(--on-primary);}
+
+  .card{background:var(--surface-2); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:16px;}
+  .section-label{font-size:12.5px; font-weight:600; color:var(--text-secondary); margin:0 0 12px;}
+
+  .count-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;}
+  @media (max-width:640px){ .count-grid{grid-template-columns:1fr;} }
+  .kpi-card{border-radius:var(--radius-lg); padding:16px; background:var(--surface-2); border:0.5px solid var(--border);}
+  .kpi-label{font-size:11.5px; margin:0 0 5px;}
+  .kpi-num{font-size:26px; font-weight:600; margin:0;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{text-align:left; padding:8px 8px; color:var(--text-secondary); font-weight:500; border-bottom:0.5px solid var(--border); white-space:nowrap;}
+  td{padding:8px 8px; border-bottom:0.5px solid var(--border); vertical-align:middle;}
+  .empty{text-align:center; padding:26px; color:var(--text-muted); font-size:13px;}
+
+  .rank-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:0.5px solid var(--border);}
+  .rank-row:last-child{border-bottom:none;}
+  .rank-badge{width:22px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; flex-shrink:0; background:var(--bg-accent); color:var(--text-accent);}
+  .rank-name{font-size:12.5px; flex:1;}
+  .rank-bar-track{flex:1; height:6px; background:var(--surface-1); border-radius:99px; overflow:hidden; max-width:140px;}
+  .rank-bar-fill{height:100%; border-radius:99px; background:var(--text-pro);}
+  .rank-num{font-size:12.5px; font-weight:600; width:40px; text-align:right; flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon"><i class="ti ti-alert-triangle"></i></div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
+    <nav class="navlist">
+      <a class="navitem active" href="pi-report.html"><i class="ti ti-chart-bar"></i><span class="navlabel">Report</span></a>
+      <a class="navitem" href="pi-returns.html"><i class="ti ti-corner-down-left"></i><span class="navlabel">Return</span></a>
+      <a class="navitem" href="pi-claims.html"><i class="ti ti-file-alert"></i><span class="navlabel">Claims</span></a>
+      <a class="navitem" href="pi-documents.html"><i class="ti ti-file-text"></i><span class="navlabel">Documents</span></a>
+      <a class="navitem" href="pi-packing.html"><i class="ti ti-box"></i><span class="navlabel">Packing</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><p class="crumb">Return &amp; Claims / Report</p><p class="pagetitle">Report</p></div>
+    </div>
+
+    <div class="card">
+      <div class="topbar" style="margin-bottom:0;">
+        <p class="section-label" style="margin:0;">สินค้าตีกลับมากที่สุด</p>
+        <div class="seg" id="periodSeg">
+          <button class="active" data-period="week">รอบสัปดาห์นี้</button>
+          <button data-period="month">รอบเดือนนี้</button>
+        </div>
+      </div>
+      <p id="periodRangeLabel" style="font-size:11px; color:var(--text-muted); margin:8px 0 14px;"></p>
+      <div id="topProductsRank"></div>
+      <div class="empty" id="topProductsEmpty" style="display:none;">ไม่มีข้อมูลตีกลับในช่วงนี้</div>
+    </div>
+
+    <p class="section-label">สรุปเคลม (นับจำนวน ไม่รวมยอดเงิน)</p>
+    <div class="count-grid">
+      <div class="kpi-card" style="background:var(--bg-success); border:none;">
+        <p class="kpi-label" style="color:var(--text-success);">เคลมสำเร็จ</p>
+        <p class="kpi-num disp" style="color:var(--text-success);" id="claimSuccess">0</p>
+      </div>
+      <div class="kpi-card" style="background:var(--bg-danger); border:none;">
+        <p class="kpi-label" style="color:var(--text-danger);">เคลมไม่สำเร็จ</p>
+        <p class="kpi-num disp" style="color:var(--text-danger);" id="claimFailed">0</p>
+      </div>
+      <div class="kpi-card" style="background:var(--bg-accent); border:none;">
+        <p class="kpi-label" style="color:var(--text-accent);">รอดำเนินการทั้งหมด</p>
+        <p class="kpi-num disp" style="color:var(--text-accent);" id="claimPending">0</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="topbar" style="margin-bottom:0;">
+        <p class="section-label" style="margin:0;">ผลงานคนแพ็ค</p>
+        <div class="seg" id="packerPeriodSeg">
+          <button class="active" data-pperiod="today">วันนี้</button>
+          <button data-pperiod="week">สัปดาห์นี้</button>
+          <button data-pperiod="month">เดือนนี้</button>
+        </div>
+      </div>
+      <p id="packerRangeLabel" style="font-size:11px; color:var(--text-muted); margin:8px 0 14px;"></p>
+      <div id="packerRank"></div>
+      <div class="empty" id="packerRankEmpty" style="display:none;">ไม่มีข้อมูลงานแพ็คในช่วงนี้</div>
+    </div>
+  </main>
+</div>
+
+<script>
+function getReturnsData(){
+  try{ return JSON.parse(localStorage.getItem('pi_returns_data') || '[]'); } catch(e){ return []; }
+}
+function getClaims(){
+  try{ return JSON.parse(localStorage.getItem('pi_claims_history') || '[]'); } catch(e){ return []; }
+}
+
+function startOfWeek(d){
+  var day = d.getDay(); // 0=Sun
+  var diff = (day === 0 ? -6 : 1) - day; // เริ่มจันทร์
+  var monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+function toISO(d){
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+var thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+function renderTopProducts(period){
+  var now = new Date();
+  var from, to, label;
+  if(period === 'week'){
+    var mon = startOfWeek(now);
+    var sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    from = toISO(mon); to = toISO(sun);
+    label = 'สัปดาห์ ' + mon.getDate() + ' - ' + sun.getDate() + ' ' + thaiMonths[sun.getMonth()] + ' ' + (sun.getFullYear()+543);
+    if(mon.getMonth() !== sun.getMonth()) label = 'สัปดาห์ ' + mon.getDate() + ' ' + thaiMonths[mon.getMonth()] + ' - ' + sun.getDate() + ' ' + thaiMonths[sun.getMonth()] + ' ' + (sun.getFullYear()+543);
+  } else {
+    var first = new Date(now.getFullYear(), now.getMonth(), 1);
+    var last = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    from = toISO(first); to = toISO(last);
+    label = '1-' + last.getDate() + ' ' + thaiMonths[first.getMonth()] + ' ' + (first.getFullYear()+543);
+  }
+  document.getElementById('periodRangeLabel').textContent = label;
+
+  var data = getReturnsData().filter(function(r){ return r.date && r.date >= from && r.date <= to; });
+  var byProduct = {};
+  data.forEach(function(r){
+    if(!byProduct[r.product]) byProduct[r.product] = 0;
+    byProduct[r.product] += r.qty;
+  });
+  var entries = Object.keys(byProduct).map(function(p){ return {product:p, qty:byProduct[p]}; });
+  entries.sort(function(a,b){ return b.qty - a.qty; });
+  entries = entries.slice(0, 10);
+
+  var box = document.getElementById('topProductsRank');
+  document.getElementById('topProductsEmpty').style.display = entries.length ? 'none' : 'block';
+  if(!entries.length){ box.innerHTML = ''; return; }
+  var max = entries[0].qty;
+  box.innerHTML = entries.map(function(e, i){
+    var pct = Math.round((e.qty/max)*100);
+    return '<div class="rank-row">' +
+      '<div class="rank-badge">'+(i+1)+'</div>' +
+      '<span class="rank-name">'+e.product+'</span>' +
+      '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+pct+'%;"></div></div>' +
+      '<span class="rank-num">'+e.qty+'</span>' +
+    '</div>';
+  }).join('');
+}
+
+document.querySelectorAll('#periodSeg button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#periodSeg button').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    renderTopProducts(btn.getAttribute('data-period'));
+  });
+});
+
+function renderClaimCounts(){
+  var claims = getClaims();
+  var counts = {transferred:0, rejected:0, pending:0};
+  claims.forEach(function(c){ counts[c.status] = (counts[c.status]||0) + 1; });
+  document.getElementById('claimSuccess').textContent = counts.transferred;
+  document.getElementById('claimFailed').textContent = counts.rejected;
+  document.getElementById('claimPending').textContent = counts.pending;
+}
+
+function getPackingData(){
+  try{ return JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ return []; }
+}
+
+function renderPackerRank(period){
+  var now = new Date();
+  var from, to, label;
+  if(period === 'today'){
+    from = to = toISO(now);
+    label = 'วันที่ ' + from;
+  } else if(period === 'week'){
+    var mon = startOfWeek(now);
+    var sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    from = toISO(mon); to = toISO(sun);
+    label = 'ช่วง ' + from + ' ถึง ' + to;
+  } else {
+    var first = new Date(now.getFullYear(), now.getMonth(), 1);
+    var last = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    from = toISO(first); to = toISO(last);
+    label = 'ช่วง ' + from + ' ถึง ' + to;
+  }
+  document.getElementById('packerRangeLabel').textContent = label;
+
+  var data = getPackingData().filter(function(r){ return r.date && r.date >= from && r.date <= to; });
+  var counts = {};
+  data.forEach(function(r){ counts[r.packer] = (counts[r.packer]||0) + (r.totalQty||0); });
+  var entries = Object.keys(counts).map(function(k){ return {packer:k, count:counts[k]}; });
+  entries.sort(function(a,b){ return b.count - a.count; });
+
+  var box = document.getElementById('packerRank');
+  document.getElementById('packerRankEmpty').style.display = entries.length ? 'none' : 'block';
+  if(!entries.length){ box.innerHTML = ''; return; }
+  var max = entries[0].count;
+  box.innerHTML = entries.map(function(e, i){
+    var pct = Math.round((e.count/max)*100);
+    return '<div class="rank-row">' +
+      '<div class="rank-badge">'+(i+1)+'</div>' +
+      '<span class="rank-name">'+e.packer+'</span>' +
+      '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+pct+'%;"></div></div>' +
+      '<span class="rank-num">'+e.count+'</span>' +
+    '</div>';
+  }).join('');
+}
+document.querySelectorAll('#packerPeriodSeg button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#packerPeriodSeg button').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    renderPackerRank(btn.getAttribute('data-pperiod'));
+  });
+});
+
+renderTopProducts('week');
+renderClaimCounts();
+renderPackerRank('today');
+</script>
+</body>
+</html>
