@@ -448,7 +448,7 @@ function renderManualList(){
   });
 }
 
-document.getElementById('addManualProductBtn').addEventListener('click', function(){
+function addManualProduct(){
   var product = document.getElementById('manualProduct').value.trim();
   var qty = document.getElementById('manualQty').value.trim();
   if(!product || !qty){ showToast('กรอกชื่อสินค้าและจำนวนก่อน', true); return; }
@@ -457,6 +457,13 @@ document.getElementById('addManualProductBtn').addEventListener('click', functio
   document.getElementById('manualQty').value = '';
   document.getElementById('manualProduct').focus();
   renderManualList();
+}
+document.getElementById('addManualProductBtn').addEventListener('click', addManualProduct);
+document.getElementById('manualQty').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    addManualProduct();
+  }
 });
 
 document.getElementById('saveManualAllBtn').addEventListener('click', function(){
