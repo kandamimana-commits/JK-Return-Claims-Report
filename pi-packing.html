@@ -177,6 +177,15 @@
       </div>
       <div class="kpi-grid" id="packerSummaryGrid"></div>
 
+      <p class="section-label" style="margin-top:22px;">ประวัติที่บันทึกแล้ว (แก้ไขได้ — พิมพ์เลขผิดมาแก้ตรงนี้)</p>
+      <div class="card" style="padding:0; overflow-x:auto; max-height:360px; overflow-y:auto;">
+        <table>
+          <thead><tr><th>วันที่</th><th>คนแพ็ค</th><th>ชื่อสินค้า</th><th style="width:100px;">จำนวน</th><th style="width:40px;"></th></tr></thead>
+          <tbody id="savedHistoryBody"></tbody>
+        </table>
+        <div class="empty" id="savedHistoryEmpty">ยังไม่มีข้อมูลที่บันทึกแล้ว</div>
+      </div>
+
       <div class="card" style="background:var(--bg-accent); border:none; margin-top:16px;">
         <p class="section-label" style="margin:0 0 8px; color:var(--text-accent);">จบเดือนนี้แล้ว?</p>
         <p class="hint" style="margin:0 0 10px;">กดเมื่อลงข้อมูลของเดือนนี้ครบแล้ว ระบบจะส่งออกข้อมูลงานแพ็ค "เดือนปัจจุบัน" ทั้งหมดเป็นไฟล์ให้ดาวน์โหลด แล้วลบออกจากเว็บ เริ่มเดือนใหม่ทันที — อยากดูย้อนหลังหลายเดือน เปิดไฟล์ที่เคยส่งออกไว้ดูได้เลย</p>
@@ -354,11 +363,69 @@ function renderPackerSummary(){
   var keys = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
   if(!keys.length){
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">ยังไม่มีข้อมูล'+(dateF ? 'ในวันที่นี้' : '')+'</div>';
-    return;
+  } else {
+    grid.innerHTML = keys.map(function(k){
+      return '<div class="kpi-card"><p class="kpi-label">'+k+'</p><p class="kpi-num disp">'+counts[k]+'</p></div>';
+    }).join('');
   }
-  grid.innerHTML = keys.map(function(k){
-    return '<div class="kpi-card"><p class="kpi-label">'+k+'</p><p class="kpi-num disp">'+counts[k]+'</p></div>';
+  renderSavedHistory();
+}
+
+function renderSavedHistory(){
+  var dateF = document.getElementById('summaryDate').value;
+  var data = [];
+  try{ data = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ data = []; }
+  var rows = [];
+  data.forEach(function(session, si){
+    if(dateF && session.date !== dateF) return;
+    (session.products||[]).forEach(function(p, pi){
+      rows.push({si:si, pi:pi, date:session.date, packer:session.packer, product:p.product, qty:p.qty});
+    });
+  });
+  rows.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var body = document.getElementById('savedHistoryBody');
+  document.getElementById('savedHistoryEmpty').style.display = rows.length ? 'none' : 'block';
+  body.innerHTML = rows.map(function(r){
+    return '<tr>' +
+      '<td class="mono" style="font-size:11px; color:var(--text-muted);">'+r.date+'</td>' +
+      '<td>'+r.packer+'</td>' +
+      '<td><input type="text" class="savedEdit" data-si="'+r.si+'" data-pi="'+r.pi+'" data-field="product" value="'+r.product+'" style="height:30px; font-size:12px;"></td>' +
+      '<td><input type="number" class="savedEdit" data-si="'+r.si+'" data-pi="'+r.pi+'" data-field="qty" value="'+r.qty+'" style="height:30px; font-size:12px;"></td>' +
+      '<td><i class="ti ti-trash" data-delsaved-si="'+r.si+'" data-delsaved-pi="'+r.pi+'" style="color:var(--text-muted); cursor:pointer;"></i></td>' +
+    '</tr>';
   }).join('');
+
+  body.querySelectorAll('.savedEdit').forEach(function(el){
+    el.addEventListener('change', function(){
+      var si = parseInt(el.getAttribute('data-si'));
+      var pi = parseInt(el.getAttribute('data-pi'));
+      var field = el.getAttribute('data-field');
+      var all = [];
+      try{ all = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ all = []; }
+      all[si].products[pi][field] = field === 'qty' ? (parseFloat(el.value)||0) : el.value.trim();
+      all[si].totalQty = all[si].products.reduce(function(s,p){ return s+(p.qty||0); }, 0);
+      try{ localStorage.setItem('pi_packing_manual', JSON.stringify(all)); } catch(e){}
+      renderPackerSummary();
+      showToast('แก้ไขแล้ว');
+    });
+  });
+  body.querySelectorAll('[data-delsaved-si]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var si = parseInt(el.getAttribute('data-delsaved-si'));
+      var pi = parseInt(el.getAttribute('data-delsaved-pi'));
+      var all = [];
+      try{ all = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ all = []; }
+      all[si].products.splice(pi, 1);
+      if(all[si].products.length){
+        all[si].totalQty = all[si].products.reduce(function(s,p){ return s+(p.qty||0); }, 0);
+      } else {
+        all.splice(si, 1); // เซสชันไม่มีสินค้าเหลือแล้ว ลบทั้งเซสชันทิ้ง
+      }
+      try{ localStorage.setItem('pi_packing_manual', JSON.stringify(all)); } catch(e){}
+      renderPackerSummary();
+      showToast('ลบรายการแล้ว');
+    });
+  });
 }
 document.getElementById('summaryDate').addEventListener('change', renderPackerSummary);
 document.getElementById('clearSummaryDateBtn').addEventListener('click', function(){
@@ -437,9 +504,18 @@ function renderManualList(){
   var body = document.getElementById('manualListBody');
   document.getElementById('manualListEmpty').style.display = manualList.length ? 'none' : 'block';
   body.innerHTML = manualList.map(function(item, i){
-    return '<tr><td>'+item.product+'</td><td>'+item.qty+'</td>' +
+    return '<tr>' +
+      '<td><input type="text" class="preSaveEdit" data-i="'+i+'" data-field="product" value="'+item.product+'" style="height:32px; font-size:12.5px;"></td>' +
+      '<td><input type="number" class="preSaveEdit" data-i="'+i+'" data-field="qty" value="'+item.qty+'" style="height:32px; font-size:12.5px; width:80px;"></td>' +
       '<td><i class="ti ti-trash" data-delmanual="'+i+'" style="color:var(--text-muted); cursor:pointer;"></i></td></tr>';
   }).join('');
+  body.querySelectorAll('.preSaveEdit').forEach(function(el){
+    el.addEventListener('change', function(){
+      var i = parseInt(el.getAttribute('data-i'));
+      var field = el.getAttribute('data-field');
+      manualList[i][field] = field === 'qty' ? (parseFloat(el.value)||0) : el.value.trim();
+    });
+  });
   body.querySelectorAll('[data-delmanual]').forEach(function(el){
     el.addEventListener('click', function(){
       manualList.splice(parseInt(el.getAttribute('data-delmanual')), 1);
