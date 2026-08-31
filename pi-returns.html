@@ -96,7 +96,7 @@
 
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand"><div class="brand-icon"><i class="ti ti-alert-triangle"></i></div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
+    <div class="brand"><div class="brand-icon" style="font-size:15px;">📦</div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
     <nav class="navlist">
       <a class="navitem" href="pi-report.html"><i class="ti ti-chart-bar"></i><span class="navlabel">Report</span></a>
       <a class="navitem active" href="pi-returns.html"><i class="ti ti-corner-down-left"></i><span class="navlabel">Return</span></a>
@@ -132,20 +132,6 @@
           <button class="btn-sync" id="saveUploadBtn"><i class="ti ti-device-floppy"></i> บันทึก</button>
           <button class="btn-ghost" id="cancelUploadBtn">ยกเลิก</button>
         </div>
-      </div>
-    </div>
-
-    <div class="card" style="background:var(--bg-danger); border:none;">
-      <p class="section-label" style="margin:0 0 10px; color:var(--text-danger);">ล้างข้อมูล (ลบถาวร กู้คืนไม่ได้)</p>
-      <div class="row3" style="align-items:end;">
-        <div><label>ลบเฉพาะช่วงวันที่ (เว้นว่างได้ถ้าไม่ระบุ)</label>
-          <div style="display:flex; gap:6px;">
-            <input type="date" id="wipeDateFrom">
-            <input type="date" id="wipeDateTo">
-          </div>
-        </div>
-        <div><button class="btn-sync" id="wipeByDateBtn" style="background:var(--text-danger); width:100%;">ลบตามช่วงวันที่นี้</button></div>
-        <div><button class="btn-sync" id="wipeAllBtn" style="background:var(--text-danger); width:100%;"><i class="ti ti-trash"></i> ล้างข้อมูลทั้งหมด</button></div>
       </div>
     </div>
 
@@ -186,6 +172,26 @@
         <tbody id="detailBody"></tbody>
       </table>
       <div class="empty" id="detailEmpty">ยังไม่มีข้อมูล</div>
+    </div>
+
+    <div class="card" style="background:var(--bg-danger); border:none; margin-top:24px;">
+      <p class="section-label" style="margin:0 0 10px; color:var(--text-danger);">ล้างข้อมูล (ลบถาวร กู้คืนไม่ได้)</p>
+      <div class="row3" style="align-items:end;">
+        <div><label>ลบเฉพาะช่วงวันที่ (เว้นว่างได้ถ้าไม่ระบุ)</label>
+          <div style="display:flex; gap:6px;">
+            <input type="date" id="wipeDateFrom">
+            <input type="date" id="wipeDateTo">
+          </div>
+        </div>
+        <div><button class="btn-sync" id="wipeByDateBtn" style="background:var(--text-danger); width:100%;">ลบตามช่วงวันที่นี้</button></div>
+        <div><button class="btn-sync" id="wipeAllBtn" style="background:var(--text-danger); width:100%;"><i class="ti ti-trash"></i> ล้างข้อมูลทั้งหมด</button></div>
+      </div>
+    </div>
+
+    <div class="card" style="background:var(--bg-accent); border:none;">
+      <p class="section-label" style="margin:0 0 8px; color:var(--text-accent);">จบเดือนนี้แล้ว?</p>
+      <p class="hint" style="margin:0 0 10px;">กดเมื่อลงข้อมูลของเดือนนี้ครบแล้ว ระบบจะส่งออกข้อมูล "เดือนปัจจุบัน" ทั้งหมดเป็นไฟล์ให้ดาวน์โหลด แล้วลบออกจากเว็บ เริ่มเดือนใหม่ทันที — ถ้าอยากดูข้อมูลหลายเดือนย้อนหลัง เปิดไฟล์ที่ส่งออกไว้แต่ละเดือนดูได้เลย</p>
+      <button class="btn-sync" id="finishMonthBtn">ปิดรอบเดือนนี้ (ส่งออกไฟล์)</button>
     </div>
   </main>
 </div>
@@ -367,6 +373,18 @@ document.getElementById('exportPrevMonthBtn').addEventListener('click', function
   saveData();
   renderAll();
   showToast('ส่งออก ' + oldRows.length + ' รายการแล้ว และเริ่มเดือนใหม่');
+});
+
+document.getElementById('finishMonthBtn').addEventListener('click', function(){
+  var curMonth = currentMonthKey();
+  var monthRows = returnsData.filter(function(r){ return r.date && r.date.slice(0,7) === curMonth; });
+  if(!monthRows.length){ showToast('ยังไม่มีข้อมูลของเดือนนี้ให้ส่งออก', true); return; }
+  if(!confirm('ปิดรอบเดือน ' + monthLabel(curMonth) + ' — ส่งออก ' + monthRows.length + ' รายการเป็นไฟล์ แล้วลบออกจากเว็บ เริ่มเดือนใหม่?\n\nดาวน์โหลดไฟล์ไว้ก่อน กดยืนยันแล้วลบออกจากเว็บทันที กู้คืนไม่ได้')) return;
+  exportToCSV(monthRows, 'ตีกลับ_' + curMonth + '.csv');
+  returnsData = returnsData.filter(function(r){ return !(r.date && r.date.slice(0,7) === curMonth); });
+  saveData();
+  renderAll();
+  showToast('ปิดรอบเดือน ' + monthLabel(curMonth) + ' แล้ว เริ่มเดือนใหม่ได้เลย');
 });
 
 function renderDetail(){

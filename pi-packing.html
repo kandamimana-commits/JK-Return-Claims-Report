@@ -120,7 +120,7 @@
 
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand"><div class="brand-icon"><i class="ti ti-alert-triangle"></i></div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
+    <div class="brand"><div class="brand-icon" style="font-size:15px;">📦</div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></div>
     <nav class="navlist">
       <a class="navitem" href="pi-report.html"><i class="ti ti-chart-bar"></i><span class="navlabel">Report</span></a>
       <a class="navitem" href="pi-returns.html"><i class="ti ti-corner-down-left"></i><span class="navlabel">Return</span></a>
@@ -176,6 +176,12 @@
         <button class="btn-ghost" id="clearSummaryDateBtn">ล้างวันที่ (ดูทั้งหมด)</button>
       </div>
       <div class="kpi-grid" id="packerSummaryGrid"></div>
+
+      <div class="card" style="background:var(--bg-accent); border:none; margin-top:16px;">
+        <p class="section-label" style="margin:0 0 8px; color:var(--text-accent);">จบเดือนนี้แล้ว?</p>
+        <p class="hint" style="margin:0 0 10px;">กดเมื่อลงข้อมูลของเดือนนี้ครบแล้ว ระบบจะส่งออกข้อมูลงานแพ็ค "เดือนปัจจุบัน" ทั้งหมดเป็นไฟล์ให้ดาวน์โหลด แล้วลบออกจากเว็บ เริ่มเดือนใหม่ทันที — อยากดูย้อนหลังหลายเดือน เปิดไฟล์ที่เคยส่งออกไว้ดูได้เลย</p>
+        <button class="btn-sync" id="finishPackingMonthBtn">ปิดรอบเดือนนี้ (ส่งออกไฟล์)</button>
+      </div>
     </div>
 
     <div id="ptab-products" style="display:none;">
@@ -358,6 +364,44 @@ document.getElementById('summaryDate').addEventListener('change', renderPackerSu
 document.getElementById('clearSummaryDateBtn').addEventListener('click', function(){
   document.getElementById('summaryDate').value = '';
   renderPackerSummary();
+});
+
+function currentMonthKeyPacking(){
+  var now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+}
+var thaiMonthsPacking = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+function monthLabelPacking(key){
+  var parts = key.split('-');
+  return thaiMonthsPacking[parseInt(parts[1])-1] + ' ' + (parseInt(parts[0])+543);
+}
+function exportPackingCSV(sessions, filename){
+  var header = 'วันที่,คนแพ็ค,ชื่อสินค้า,จำนวน\n';
+  var lines = [];
+  sessions.forEach(function(s){
+    (s.products||[]).forEach(function(p){
+      lines.push([s.date, s.packer, '"'+p.product.replace(/"/g,'""')+'"', p.qty].join(','));
+    });
+  });
+  var blob = new Blob(['\uFEFF' + header + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById('finishPackingMonthBtn').addEventListener('click', function(){
+  var curMonth = currentMonthKeyPacking();
+  var all = [];
+  try{ all = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ all = []; }
+  var monthSessions = all.filter(function(r){ return r.date && r.date.slice(0,7) === curMonth; });
+  if(!monthSessions.length){ showToast('ยังไม่มีข้อมูลของเดือนนี้ให้ส่งออก', true); return; }
+  if(!confirm('ปิดรอบเดือน ' + monthLabelPacking(curMonth) + ' — ส่งออก ' + monthSessions.length + ' รอบงานเป็นไฟล์ แล้วลบออกจากเว็บ เริ่มเดือนใหม่?\n\nดาวน์โหลดไฟล์ไว้ก่อน กดยืนยันแล้วลบออกจากเว็บทันที กู้คืนไม่ได้')) return;
+  exportPackingCSV(monthSessions, 'คนแพ็ค_' + curMonth + '.csv');
+  var remaining = all.filter(function(r){ return !(r.date && r.date.slice(0,7) === curMonth); });
+  try{ localStorage.setItem('pi_packing_manual', JSON.stringify(remaining)); } catch(e){}
+  renderPackerSummary();
+  showToast('ปิดรอบเดือน ' + monthLabelPacking(curMonth) + ' แล้ว เริ่มเดือนใหม่ได้เลย');
 });
 
 // ===== กรอกเอง (แมนนวล พร้อมรูปหลักฐาน) =====
