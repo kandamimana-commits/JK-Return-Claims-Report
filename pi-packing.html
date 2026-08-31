@@ -153,6 +153,11 @@
 
       <div class="card">
         <p class="section-label" style="margin-top:0;">เพิ่มสินค้าที่แพ็ค</p>
+        <div id="orderDateRangeRow" class="row2" style="margin-bottom:10px;">
+          <div><label>วันที่มีออเดอร์ — เริ่ม</label><input type="date" id="orderDateFrom"></div>
+          <div><label>วันที่มีออเดอร์ — ถึง</label><input type="date" id="orderDateTo"></div>
+        </div>
+        <p class="hint" id="orderDateHint" style="margin:-4px 0 10px;">เผื่อแพ็คของออเดอร์หลายวันรวมกันในรอบเดียว ใส่แค่วันเดียวก็ใส่ทั้งเริ่ม-ถึงเป็นวันเดียวกันได้</p>
         <div class="row2" style="margin-bottom:10px;">
           <div class="suggest-wrap"><label>ชื่อสินค้า</label><input type="text" id="manualProduct" autocomplete="off" placeholder="เช่น กล่องสบู่"><div id="productSuggest" class="suggest-panel" style="display:none;"></div></div>
           <div><label>จำนวนที่แพ็ค</label><input type="number" id="manualQty" placeholder="เช่น 5"></div>
@@ -163,7 +168,7 @@
       <p class="section-label">รายการที่เพิ่มไว้ในรอบนี้</p>
       <div class="card" style="padding:0; overflow-x:auto;">
         <table>
-          <thead><tr><th>ชื่อสินค้า</th><th>จำนวน</th><th style="width:40px;"></th></tr></thead>
+          <thead><tr><th>ชื่อสินค้า</th><th>จำนวน</th><th>วันที่ออเดอร์</th><th style="width:40px;"></th></tr></thead>
           <tbody id="manualListBody"></tbody>
         </table>
         <div class="empty" id="manualListEmpty">ยังไม่มีรายการ — เพิ่มสินค้าด้านบนก่อน</div>
@@ -177,10 +182,19 @@
       </div>
       <div class="kpi-grid" id="packerSummaryGrid"></div>
 
+      <p class="section-label" style="margin-top:22px;">ค้นหาว่าใครแพ็ค</p>
+      <p class="hint" style="margin:0 0 10px;">เลือกชื่อสินค้า + วันที่ออเดอร์ เพื่อเช็คว่าใครแพ็คสินค้านี้ของออเดอร์วันนั้น</p>
+      <div class="row2" style="margin-bottom:10px; max-width:520px;">
+        <div><label>ชื่อสินค้า</label><input type="text" id="lookupProduct" placeholder="เช่น กล่องสบู่"></div>
+        <div><label>วันที่ออเดอร์</label><input type="date" id="lookupDate"></div>
+      </div>
+      <button class="btn-primary" id="lookupBtn" style="margin-bottom:10px;">ค้นหา</button>
+      <div id="lookupResult" style="margin-bottom:10px;"></div>
+
       <p class="section-label" style="margin-top:22px;">ประวัติที่บันทึกแล้ว (แก้ไขได้ — พิมพ์เลขผิดมาแก้ตรงนี้)</p>
       <div class="card" style="padding:0; overflow-x:auto; max-height:360px; overflow-y:auto;">
         <table>
-          <thead><tr><th>วันที่</th><th>คนแพ็ค</th><th>ชื่อสินค้า</th><th style="width:100px;">จำนวน</th><th style="width:40px;"></th></tr></thead>
+          <thead><tr><th>วันที่แพ็ค</th><th>คนแพ็ค</th><th>ชื่อสินค้า</th><th style="width:100px;">จำนวน</th><th>วันที่ออเดอร์</th><th style="width:40px;"></th></tr></thead>
           <tbody id="savedHistoryBody"></tbody>
         </table>
         <div class="empty" id="savedHistoryEmpty">ยังไม่มีข้อมูลที่บันทึกแล้ว</div>
@@ -260,7 +274,9 @@ function renderProductList(){
   statusEl.textContent = list.length ? ('มีรายชื่อสินค้าอยู่ ' + list.length + ' รายการ') : '';
 }
 
+
 var productMatches = [];
+
 var productHl = -1;
 function populateProductDatalist(){
   // เก็บไว้เผื่อโค้ดอื่นเรียก แต่ตัว dropdown จริงกรองสดจาก getProductList() ทุกครั้งที่พิมพ์
@@ -379,18 +395,20 @@ function renderSavedHistory(){
   data.forEach(function(session, si){
     if(dateF && session.date !== dateF) return;
     (session.products||[]).forEach(function(p, pi){
-      rows.push({si:si, pi:pi, date:session.date, packer:session.packer, product:p.product, qty:p.qty});
+      rows.push({si:si, pi:pi, date:session.date, packer:session.packer, product:p.product, qty:p.qty, orderDateFrom:p.orderDateFrom||'', orderDateTo:p.orderDateTo||''});
     });
   });
   rows.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var body = document.getElementById('savedHistoryBody');
   document.getElementById('savedHistoryEmpty').style.display = rows.length ? 'none' : 'block';
   body.innerHTML = rows.map(function(r){
+    var rangeLabel = r.orderDateFrom ? (r.orderDateFrom === r.orderDateTo ? r.orderDateFrom : r.orderDateFrom+' ถึง '+r.orderDateTo) : '-';
     return '<tr>' +
       '<td class="mono" style="font-size:11px; color:var(--text-muted);">'+r.date+'</td>' +
       '<td>'+r.packer+'</td>' +
       '<td><input type="text" class="savedEdit" data-si="'+r.si+'" data-pi="'+r.pi+'" data-field="product" value="'+r.product+'" style="height:30px; font-size:12px;"></td>' +
       '<td><input type="number" class="savedEdit" data-si="'+r.si+'" data-pi="'+r.pi+'" data-field="qty" value="'+r.qty+'" style="height:30px; font-size:12px;"></td>' +
+      '<td style="font-size:11px; color:var(--text-muted);">'+rangeLabel+'</td>' +
       '<td><i class="ti ti-trash" data-delsaved-si="'+r.si+'" data-delsaved-pi="'+r.pi+'" style="color:var(--text-muted); cursor:pointer;"></i></td>' +
     '</tr>';
   }).join('');
@@ -427,6 +445,40 @@ function renderSavedHistory(){
     });
   });
 }
+function lookupByProductDate(){
+  var product = document.getElementById('lookupProduct').value.trim().toLowerCase();
+  var date = document.getElementById('lookupDate').value;
+  var box = document.getElementById('lookupResult');
+  if(!product || !date){ showToast('กรอกทั้งชื่อสินค้าและวันที่ก่อน', true); return; }
+  var data = [];
+  try{ data = JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ data = []; }
+  var found = [];
+  data.forEach(function(session){
+    (session.products||[]).forEach(function(p){
+      if(!p.product.toLowerCase().includes(product)) return;
+      // ไม่มีช่วงวันที่ (เช่น ของวาวา) ให้ถือว่าตรงตามชื่อสินค้าอย่างเดียว
+      var inRange = !p.orderDateFrom || (date >= p.orderDateFrom && date <= (p.orderDateTo||p.orderDateFrom));
+      if(inRange){
+        found.push({packDate:session.date, packer:session.packer, product:p.product, qty:p.qty, orderDateFrom:p.orderDateFrom, orderDateTo:p.orderDateTo});
+      }
+    });
+  });
+  if(!found.length){
+    box.innerHTML = '<p class="hint" style="margin:0; color:var(--text-danger);">ไม่พบข้อมูลที่ตรงกับชื่อสินค้าและวันที่นี้</p>';
+    return;
+  }
+  box.innerHTML = found.map(function(f){
+    var rangeLabel = f.orderDateFrom ? (f.orderDateFrom === f.orderDateTo ? f.orderDateFrom : f.orderDateFrom+' ถึง '+f.orderDateTo) : '(ไม่ระบุช่วงวันที่)';
+    return '<div style="border:0.5px solid var(--border-success); background:var(--bg-success); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:6px; font-size:12.5px;">' +
+      'คนแพ็ค <b>'+f.packer+'</b> &nbsp;|&nbsp; สินค้า <b>'+f.product+'</b> ('+f.qty+' ชิ้น) &nbsp;|&nbsp; ออเดอร์ช่วง '+rangeLabel+' &nbsp;|&nbsp; แพ็คเมื่อ '+f.packDate +
+    '</div>';
+  }).join('');
+}
+document.getElementById('lookupBtn').addEventListener('click', lookupByProductDate);
+document.getElementById('lookupDate').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') lookupByProductDate();
+});
+
 document.getElementById('summaryDate').addEventListener('change', renderPackerSummary);
 document.getElementById('clearSummaryDateBtn').addEventListener('click', function(){
   document.getElementById('summaryDate').value = '';
@@ -490,7 +542,17 @@ function populateManualPackerSelect(){
   var opts = packerOptionsFromHistory();
   sel.innerHTML = opts.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
   if(opts.indexOf(cur) !== -1) sel.value = cur;
+  updateOrderDateRangeVisibility();
 }
+function updateOrderDateRangeVisibility(){
+  var packer = document.getElementById('manualPacker').value;
+  var row = document.getElementById('orderDateRangeRow');
+  var hint = document.getElementById('orderDateHint');
+  var show = packer !== 'วาวา';
+  row.style.display = show ? 'grid' : 'none';
+  hint.style.display = show ? 'block' : 'none';
+}
+document.getElementById('manualPacker').addEventListener('change', updateOrderDateRangeVisibility);
 
 document.getElementById('manualPhoto').addEventListener('change', function(e){
   var f = e.target.files[0];
@@ -504,9 +566,11 @@ function renderManualList(){
   var body = document.getElementById('manualListBody');
   document.getElementById('manualListEmpty').style.display = manualList.length ? 'none' : 'block';
   body.innerHTML = manualList.map(function(item, i){
+    var rangeLabel = item.orderDateFrom ? (item.orderDateFrom === item.orderDateTo ? item.orderDateFrom : item.orderDateFrom+' ถึง '+item.orderDateTo) : '-';
     return '<tr>' +
       '<td><input type="text" class="preSaveEdit" data-i="'+i+'" data-field="product" value="'+item.product+'" style="height:32px; font-size:12.5px;"></td>' +
       '<td><input type="number" class="preSaveEdit" data-i="'+i+'" data-field="qty" value="'+item.qty+'" style="height:32px; font-size:12.5px; width:80px;"></td>' +
+      '<td style="font-size:12px; color:var(--text-muted);">'+rangeLabel+'</td>' +
       '<td><i class="ti ti-trash" data-delmanual="'+i+'" style="color:var(--text-muted); cursor:pointer;"></i></td></tr>';
   }).join('');
   body.querySelectorAll('.preSaveEdit').forEach(function(el){
@@ -528,7 +592,16 @@ function addManualProduct(){
   var product = document.getElementById('manualProduct').value.trim();
   var qty = document.getElementById('manualQty').value.trim();
   if(!product || !qty){ showToast('กรอกชื่อสินค้าและจำนวนก่อน', true); return; }
-  manualList.push({product:product, qty:parseFloat(qty)||0});
+  var packer = document.getElementById('manualPacker').value;
+  var item = {product:product, qty:parseFloat(qty)||0};
+  if(packer !== 'วาวา'){
+    var from = document.getElementById('orderDateFrom').value;
+    var to = document.getElementById('orderDateTo').value;
+    if(!from){ showToast('ระบุวันที่มีออเดอร์ก่อน (อย่างน้อยวันเริ่ม)', true); return; }
+    item.orderDateFrom = from;
+    item.orderDateTo = to || from;
+  }
+  manualList.push(item);
   document.getElementById('manualProduct').value = '';
   document.getElementById('manualQty').value = '';
   document.getElementById('manualProduct').focus();
