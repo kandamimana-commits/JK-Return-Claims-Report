@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%93%A6</text></svg>">
+<title>JK888 Return & Claims — Tracking</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#FBF2E2; --surface:#FFFFFF; --surface-kraft:#F3E4C8;
+    --ink:#4A3826; --ink-soft:#93805F; --ink-faint:#C9B594;
+    --border:rgba(74,56,38,0.15);
+    --stamp-red:#C94F4F; --stamp-red-deep:#A83A3A; --stamp-red-soft:#F3DEDE; --on-stamp:#FFFFFF;
+    --stamp-green:#5FA980; --stamp-green-soft:#DCEEE2; --stamp-green-deep:#3F7D5C;
+    --pending:#D4A03C; --pending-soft:#FBEDD1; --pending-deep:#8A6118;
+    --radius-lg:22px; --radius-md:16px; --radius-pill:999px;
+    --font-display:'Mitr',sans-serif; --font-body:'Sarabun',sans-serif; --font-mono:'JetBrains Mono',monospace;
+    --text-danger:var(--stamp-red-deep); --text-muted:var(--ink-faint);
+    --bg-success:var(--stamp-green-soft); --border-success:var(--stamp-green); --text-success:var(--stamp-green-deep);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#241C13; --surface:#332619; --surface-kraft:#3E2F1E;
+      --ink:#F6EBDB; --ink-soft:#CBB693; --ink-faint:#8D7856;
+      --border:rgba(246,235,219,0.14);
+      --stamp-red:#E27878; --stamp-red-deep:#F0A0A0; --stamp-red-soft:#4A2C2C; --on-stamp:#2A1010;
+      --stamp-green:#7FC29E; --stamp-green-soft:#25392E; --stamp-green-deep:#9FDABB;
+      --pending:#E8C170; --pending-soft:#3D2F14; --pending-deep:#F0D08A;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:16px; -webkit-font-smoothing:antialiased; }
+  .disp{font-family:var(--font-display);}
+  .mono{font-family:var(--font-mono);}
+  input,select{ height:46px; border-radius:var(--radius-md); border:1.5px solid var(--border); background:var(--surface); color:var(--ink); padding:0 14px; font-size:15px; font-family:inherit; width:100%; }
+  button{font-family:inherit; cursor:pointer;}
+  label{font-size:14px; font-weight:600; color:var(--ink-soft); display:block; margin:0 0 6px;}
+
+  .shell{display:flex; min-height:100vh;}
+  .sidebar{width:220px; flex-shrink:0; background:var(--surface-kraft); padding:24px 16px; border-right:1.5px solid var(--border);}
+  @media (max-width:768px){ .shell{flex-direction:column;} .sidebar{width:100%; display:flex; align-items:center; gap:14px; padding:14px 18px; border-right:none; border-bottom:1.5px solid var(--border);} .sidebar .navlist{display:flex; flex-direction:row; gap:6px; overflow-x:auto;} .sidebar .navlabel{white-space:nowrap;} }
+
+  .brand{display:flex; align-items:center; gap:10px; margin-bottom:24px; text-decoration:none; color:inherit; position:relative;}
+  @media (max-width:768px){ .brand{margin-bottom:0;} }
+  .brand-stamp{position:absolute; top:-18px; left:-14px; width:46px; height:46px; border-radius:50%; border:2.5px solid var(--stamp-red); opacity:0.85; transform:rotate(-12deg); display:flex; align-items:center; justify-content:center;}
+  .brand-stamp::after{content:'↩'; font-size:20px; font-weight:700; color:var(--stamp-red);}
+  @media (max-width:768px){ .brand-stamp{display:none;} }
+  .brand-icon{font-size:26px; line-height:1; position:relative; z-index:1;}
+  .brand-name{font-family:var(--font-display); font-size:14.5px; font-weight:700; margin:0; line-height:1.3; position:relative; z-index:1;}
+
+  .navlist{display:flex; flex-direction:column; gap:5px;}
+  .navitem{display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:var(--radius-md); text-decoration:none; color:var(--ink-soft); font-family:var(--font-display); font-size:15px; font-weight:500; white-space:nowrap;}
+  .navitem .navicon{font-size:18px;}
+  .navitem.active{background:var(--stamp-red); color:var(--on-stamp);}
+
+  .main{flex:1; padding:28px 30px; min-width:0;}
+  @media (max-width:768px){ .main{padding:18px;} }
+  .pagetitle{font-family:var(--font-display); font-size:26px; font-weight:700; margin:0 0 4px;}
+  .pagesub{font-size:15px; color:var(--ink-soft); margin:0 0 24px;}
+
+  .card{background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-lg); padding:22px; margin-bottom:18px;}
+  .section-label{font-family:var(--font-display); font-size:17px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .hint{font-size:13.5px; color:var(--ink-soft); margin:0 0 12px; line-height:1.5;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:640px){ .row2, .row3{grid-template-columns:1fr;} }
+
+  .file-btn{background:var(--surface-kraft); border:1.5px dashed var(--border); border-radius:var(--radius-md); padding:0 16px; font-size:15px; font-weight:500; color:var(--ink-soft); display:flex; align-items:center; gap:8px; cursor:pointer; justify-content:center; height:46px;}
+  input[type=file]{display:none;}
+
+  .btn-main{background:var(--stamp-red); color:var(--on-stamp); border:none; border-radius:var(--radius-pill); height:48px; padding:0 24px; font-family:var(--font-display); font-size:15.5px; font-weight:600; width:auto; box-shadow:0 4px 14px rgba(201,79,79,0.28);}
+  .btn-dark{background:var(--ink); color:var(--surface); border:none; border-radius:var(--radius-pill); height:48px; padding:0 24px; font-family:var(--font-display); font-size:15.5px; font-weight:600; width:auto;}
+  .btn-ghost{border:1.5px solid var(--border); background:var(--surface); color:var(--ink-soft); border-radius:var(--radius-pill); height:40px; padding:0 16px; font-size:13.5px; font-weight:500; width:auto;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:12px; margin-bottom:18px;}
+  .kpi-card{border-radius:var(--radius-lg); padding:18px; background:var(--surface-kraft);}
+  .kpi-label{font-size:13px; color:var(--ink-soft); font-weight:600; margin:0 0 6px;}
+  .kpi-num{font-family:var(--font-display); font-size:26px; font-weight:700; margin:0; color:var(--ink);}
+
+  table{width:100%; border-collapse:collapse; font-size:14.5px;}
+  th{text-align:left; padding:9px 8px; color:var(--ink-soft); font-weight:600; border-bottom:1.5px solid var(--border); white-space:nowrap; font-size:12.5px;}
+  td{padding:9px 8px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  .empty{text-align:center; padding:30px 20px; color:var(--ink-faint); font-size:14.5px;}
+  .toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:10px; flex-wrap:wrap;}
+
+  .month-card{background:var(--stamp-red-soft); border:1.5px solid var(--stamp-red); border-radius:var(--radius-lg); padding:22px;}
+  .month-card .section-label{color:var(--stamp-red-deep);}
+  .danger-card{background:var(--stamp-red-soft); border:none;}
+  .danger-card .section-label{color:var(--stamp-red-deep);}
+  .found-card{border:1.5px solid var(--stamp-green); background:var(--stamp-green-soft); border-radius:var(--radius-md); padding:16px; margin-top:14px;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="pi-report.html"><div class="brand-stamp"></div><div class="brand-icon">📦</div><p class="brand-name">JK888<br>Return &amp; Claims</p></a>
+    <nav class="navlist">
+      <a class="navitem" href="pi-report.html"><span class="navicon">📊</span><span class="navlabel">Report</span></a>
+      <a class="navitem" href="pi-returns.html"><span class="navicon">↩️</span><span class="navlabel">Return</span></a>
+      <a class="navitem" href="pi-claims.html"><span class="navicon">🧾</span><span class="navlabel">Claims</span></a>
+      <a class="navitem" href="pi-enter-data.html"><span class="navicon">✏️</span><span class="navlabel">Enter data</span></a>
+      <a class="navitem active" href="pi-tracking.html"><span class="navicon">🔎</span><span class="navlabel">Tracking</span></a>
+      <a class="navitem" href="pi-archive.html"><span class="navicon">🗂️</span><span class="navlabel">Archive</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <p class="pagetitle">Tracking queue</p>
+    <p class="pagesub">จัดชุดเลขส่งออก รับผลตรวจสถานะ แล้วแยกคิวเคลม</p>
+
+    <div class="card">
+      <p class="section-label">1️⃣ เลือกชุดส่งออก แล้วคัดลอกเลขไปตรวจสอบ</p>
+      <p class="hint">ข้อมูลมาจากไฟล์ส่งออกที่อัปโหลดในหน้า Enter data ระบบแบ่งชุดละ 500 เลข</p>
+      <div class="row3">
+        <div><label>วันที่ส่งออก</label><select id="day"></select></div>
+        <div><label>เลือกชุดที่ต้องการคัดลอก</label><select id="batchPick"></select></div>
+        <div><label>&nbsp;</label><button class="btn-main" id="copyAll" style="width:100%;"><i class="ti ti-copy"></i> คัดลอกชุดที่เลือก</button></div>
+      </div>
+      <p class="hint" id="batchInfo" style="margin:12px 0 0;"></p>
+    </div>
+
+    <div class="card">
+      <p class="section-label">2️⃣ อัปโหลดผลดิบการตรวจสถานะ</p>
+      <p class="hint">นำเลขไปค้นหาสถานะเอง แล้วอัปโหลดผลกลับมาได้หลายไฟล์พร้อมกัน ระบบจะรวมผลทั้งหมด จับคู่เลขพัสดุ และกรองรายการที่ยังไม่เซ็นรับ</p>
+      <label class="file-btn"><i class="ti ti-upload"></i><span id="rawName">อัปโหลดผลสถานะ (เลือกได้หลายไฟล์)</span><input id="rawFile" type="file" accept=".xlsx,.xls,.csv,.txt" multiple></label>
+      <p class="hint" id="rawImportInfo" style="display:none; margin-top:10px;"></p>
+      <p class="hint" id="rawUploadIssue" style="display:none; margin-top:10px; color:var(--stamp-red-deep); font-weight:600;"></p>
+      <button class="btn-ghost" id="clearDayResults" style="margin-top:12px; color:var(--stamp-red-deep);"><i class="ti ti-trash"></i> ล้างผลตรวจของวันที่เลือก</button>
+      <div class="kpi-grid" style="margin-top:14px;">
+        <div class="kpi-card"><p class="kpi-label">ส่งออก</p><p class="kpi-num disp" id="total">0</p></div>
+        <div class="kpi-card success"><p class="kpi-label">ส่งสำเร็จ</p><p class="kpi-num-lg disp" id="delivered">0</p></div>
+        <div class="kpi-card danger"><p class="kpi-label">ตีกลับ</p><p class="kpi-num-lg disp" id="returned">0</p></div>
+        <div class="kpi-card"><p class="kpi-label">ยังไม่อัปโหลดผล</p><p class="kpi-num-lg disp" id="notUploaded">0</p></div>
+        <div class="kpi-card pending"><p class="kpi-label">รอตรวจผล</p><p class="kpi-num-lg disp" id="unreceived">0</p></div>
+        <div class="kpi-card"><p class="kpi-label">อ่านสถานะไม่ได้</p><p class="kpi-num-lg disp" id="unknown">0</p></div>
+      </div>
+      <button class="btn-ghost" id="copyPending" style="margin-top:14px;"><i class="ti ti-copy"></i> คัดลอกเฉพาะยังไม่เซ็นรับ</button>
+    </div>
+
+    <div class="card">
+      <p class="section-label">3️⃣ อัปโหลดสรุปวันของสถานะล่าสุด</p>
+      <p class="hint">สำหรับไฟล์ Tracking ใช้ D:F โดยตรง: D = ค้างกี่วัน, E = เซ็นรับแล้ว, F = ตีกลับ ระบบจะแยกคิวเคลมให้</p>
+      <label class="file-btn"><i class="ti ti-file-analytics"></i><span id="detailName">อัปโหลดสรุปสถานะล่าสุด</span><input id="detailFile" type="file" accept=".xlsx,.xls,.csv,.txt"></label>
+      <div class="kpi-grid" style="margin-top:14px;">
+        <div class="kpi-card"><p class="kpi-label">ติดตามต่อ</p><p class="kpi-num disp" id="follow">0</p></div>
+        <div class="kpi-card pending"><p class="kpi-label">ต้องเคลม (≥10 วัน)</p><p class="kpi-num-lg disp" id="claimable">0</p></div>
+        <div class="kpi-card"><p class="kpi-label">ค้างนานสุด</p><p class="kpi-num disp" id="maxDays" style="font-size:19px;">-</p></div>
+        <div class="kpi-card"><p class="kpi-label">อัปเดตล่าสุด</p><p class="kpi-num disp" id="checked" style="font-size:16px;">-</p></div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0; overflow-x:auto;">
+      <table>
+        <thead><tr><th>เลขพัสดุ</th><th>สถานะล่าสุด</th><th>ค้างตามไฟล์</th><th>คิว</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty">ยังไม่มีผลสรุปสถานะ</div>
+    </div>
+  </main>
+</div>
+
+<style>
+  .kpi-card.success{background:var(--stamp-green-soft);}
+  .kpi-card.success .kpi-num-lg, .kpi-card.success .kpi-label{color:var(--stamp-green-deep);}
+  .kpi-card.pending{background:var(--pending-soft);}
+  .kpi-card.pending .kpi-num-lg, .kpi-card.pending .kpi-label{color:var(--pending-deep);}
+  .kpi-card.danger{background:var(--stamp-red-soft);}
+  .kpi-card.danger .kpi-num-lg, .kpi-card.danger .kpi-label{color:var(--stamp-red-deep);}
+  .kpi-num-lg{font-family:var(--font-display); font-size:24px; font-weight:700; margin:0;}
+  .pill{display:inline-block; border-radius:999px; padding:5px 12px; font-size:12.5px; font-weight:600;}
+  .pill.ok{background:var(--stamp-green-soft); color:var(--stamp-green-deep);}
+  .pill.back{background:var(--stamp-red-soft); color:var(--stamp-red-deep);}
+  .pill.wait{background:var(--pending-soft); color:var(--pending-deep);}
+</style>
+
+<script>
+function showToast(msg, warn){
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:'+(warn?'var(--stamp-red-deep)':'var(--ink)')+'; color:var(--surface); padding:13px 22px; border-radius:999px; font-size:14.5px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.25);';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2400);
+}
+var S='pi_outbound_batches', Q='pi_tracking_results';
+function loadTrk(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); } catch(e){ return []; } }
+function norm(v){ return String(v||'').replace(/[^A-Za-z0-9]/g,'').trim(); }
+function parseDateTrk(v){
+  var s = String(v||'').trim();
+  var m = s.match(/(\d{4})[-\/](\d\d?)[-\/](\d\d?)/) || s.match(/(\d\d?)\/(\d\d?)\/(\d{2,4})/);
+  if(!m) return '';
+  if(m[1].length===4) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  var y = +m[3]; if(y<100) y += y>50?2500:2000; if(y>2400) y -= 543;
+  return y+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+}
+function daysSince(d){ return d ? Math.max(0, Math.floor((new Date()-new Date(d+'T00:00:00'))/86400000)) : 0; }
+function stallDaysOf(x){
+  var n = Number(x.stallDays);
+  return Number.isFinite(n) && n>=0 ? n : null;
+}
+function outgoing(){ return loadTrk(S); }
+function claimedTracking(){
+  var map = {};
+  try{
+    JSON.parse(localStorage.getItem('pi_claims_history') || '[]').forEach(function(claim){
+      String(claim.tracking || '').split(',').forEach(function(value){
+        var key = norm(value);
+        if(key) map[key] = true;
+      });
+    });
+  }catch(e){}
+  return map;
+}
+function getSet(){ var d = document.getElementById('day').value; return outgoing().filter(function(x){ return x.date===d; }); }
+function statusOf(x){
+  var s = String(x.status||'').toLowerCase();
+  if(/เซ็นรับตีกลับ|ตีกลับ|return|\brto\b/.test(s)) return 'returned';
+  if(/เซ็นรับพัสดุแล้ว|สำเร็จ|signed|delivered|received/.test(s)) return 'delivered';
+  if(isAwaitingSignature(x)) return 'pending';
+  return 'unknown';
+}
+function isAwaitingSignature(x){
+  return /ยังไม่เซ็นรับ(?:พัสดุ)?|not\s*signed|unsigned/.test(String(x.status||'').toLowerCase());
+}
+function renderDays(){
+  var a = Array.from(new Set(outgoing().map(function(x){return x.date;}).filter(Boolean))).sort().reverse();
+  var el = document.getElementById('day');
+  el.innerHTML = a.length ? a.map(function(x){ return '<option>'+x+'</option>'; }).join('') : '<option>ยังไม่มีข้อมูลส่งออก</option>';
+  render();
+}
+function render(){
+  var set = getSet();
+  var r = loadTrk(Q).filter(function(x){ return x.shipDate===document.getElementById('day').value; });
+  var mp = {}; r.forEach(function(x){ mp[x.tracking]=x; });
+  var c = {delivered:0, returned:0, pending:0, notUploaded:0, unknown:0};
+  set.forEach(function(x){
+    if(!mp[x.tracking]) c.notUploaded++;
+    else c[statusOf(mp[x.tracking])]++;
+  });
+  document.getElementById('total').textContent = set.length;
+  document.getElementById('delivered').textContent = c.delivered;
+  document.getElementById('returned').textContent = c.returned;
+  document.getElementById('notUploaded').textContent = c.notUploaded;
+  document.getElementById('unreceived').textContent = c.pending;
+  document.getElementById('unknown').textContent = c.unknown;
+  var claimed = claimedTracking();
+  var detail = r.filter(function(x){ return stallDaysOf(x)!==null && !claimed[x.tracking] && statusOf(x)==='pending'; });
+  var follow = detail.filter(function(x){ return stallDaysOf(x)<10; });
+  var claim = detail.filter(function(x){ return stallDaysOf(x)>=10; });
+  document.getElementById('follow').textContent = follow.length;
+  document.getElementById('claimable').textContent = claim.length;
+  document.getElementById('maxDays').textContent = detail.length ? Math.max.apply(null, detail.map(stallDaysOf)) + ' วัน' : '-';
+  document.getElementById('checked').textContent = detail.length ? new Date().toLocaleDateString('th-TH') : '-';
+  document.getElementById('rows').innerHTML = detail.map(function(x){
+    var n = stallDaysOf(x), isClaim = n>=10;
+    return '<tr><td class="mono">'+x.tracking+'</td><td>'+x.status+'</td><td>'+n+' วัน</td>' +
+      '<td><span class="pill '+(isClaim?'back':'wait')+'">'+(isClaim?'ต้องเคลม':'ติดตามต่อ')+'</span></td></tr>';
+  }).join('');
+  document.getElementById('empty').style.display = detail.length ? 'none' : 'block';
+  renderBatchPicker(set.length);
+  var batch = Math.ceil(set.length/500);
+  document.getElementById('batchInfo').textContent = set.length ? 'มี '+set.length+' เลข แบ่งเป็น '+batch+' ชุด ชุดละไม่เกิน 500 เลข' : '';
+}
+function renderBatchPicker(total){
+  var el = document.getElementById('batchPick');
+  var before = el.value;
+  var count = Math.ceil(total/500);
+  el.disabled = !count;
+  el.innerHTML = count ? Array.from({length:count}, function(_, i){
+    var from = i*500+1, to = Math.min((i+1)*500,total);
+    return '<option value="'+i+'">ชุด '+(i+1)+' · เลขที่ '+from+'–'+to+'</option>';
+  }).join('') : '<option>ยังไม่มีเลขส่งออก</option>';
+  if(before && +before<count) el.value = before;
+}
+async function readTrkFile(f, requireSignature){
+  var buf = await f.arrayBuffer();
+  var wb, a;
+  if(/\.csv$/i.test(f.name)){
+    var bytes = new Uint8Array(buf);
+    var encodings = ['utf-8','windows-874'];
+    var best = [];
+    encodings.forEach(function(encoding){
+      try{
+        var text = new TextDecoder(encoding).decode(bytes);
+        var csvBook = XLSX.read(text, {type:'string', cellDates:true});
+        var rows = XLSX.utils.sheet_to_json(csvBook.Sheets[csvBook.SheetNames[0]], {defval:'', raw:false});
+        var score = rows.length ? Object.keys(rows[0]).join('').replace(/[^\u0E00-\u0E7FA-Za-z]/g,'').length : 0;
+        if(!best.length || score > best.score) { best = rows; best.score = score; }
+      }catch(e){}
+    });
+    a = best;
+  }else{
+    wb = XLSX.read(buf, {type:'array', cellDates:true});
+    a = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:'', raw:false});
+  }
+  var cols = a.length ? Object.keys(a[0]) : [];
+  function header(v){ return String(v||'').toLowerCase().replace(/[\s_\-()]/g,''); }
+  function find(words){ return cols.find(function(c){ var h=header(c); return words.some(function(w){ return h.includes(header(w)); }); }); }
+  var awb = find(['awb','เลขพัสดุ','เลขนำส่ง','tracking','waybill','parcel','shipment']);
+  if(!awb){
+    awb = cols.find(function(c){
+      var sample = a.slice(0,20).filter(function(row){ return norm(row[c]).length>=8; });
+      return sample.length >= Math.min(3, a.length);
+    });
+  }
+  var st = find(['สถานะ','status']);
+  var signature = find(['สัญลักษณ์การเซ็นรับ','ลักษณะการเซ็นรับ','การเซ็นรับ','signature']);
+  if(!signature){
+    signature = cols.find(function(c){
+      return a.slice(0,50).some(function(row){ return /เซ็นรับ/.test(String(row[c]||'')); });
+    });
+  }
+  var up = find(['อัปเดต','updated','last update','วันที่สถานะ','last_move','lastmove','movement','วันที่เคลื่อนไหว']);
+  var stall = find(['stall_days','stall days','ค้างกี่วัน','นิ่งกี่วัน','days_stalled']);
+  var signedFlag = find(['signed','เซ็นรับแล้ว','signed_flag']);
+  var returnedFlag = find(['returned','ตีกลับแล้ว','return_flag']);
+  if(!awb) throw new Error('ไม่พบคอลัมน์เลขพัสดุ');
+  if(requireSignature && !signature) throw new Error('ไฟล์ “'+f.name+'” อ่านคอลัมน์ลักษณะการเซ็นรับไม่ได้ — ไฟล์นี้ไม่ใช่ผลดิบภาษาไทยที่ใช้คัดกรอง');
+  if(requireSignature && !a.some(function(row){ return /เซ็นรับ/.test(String(row[signature]||'')); })) throw new Error('ไฟล์ “'+f.name+'” มีคอลัมน์การเซ็นรับ แต่ข้อมูลอ่านไม่เป็นภาษาไทย — กรุณาแยกไฟล์นี้ออก');
+  function marked(v){ return /^(1|true|yes|y)$/i.test(String(v||'').trim()); }
+  return a.map(function(x){
+    var signed = signature ? String(x[signature]).trim() : '';
+    var status = signed || (st ? String(x[st]).trim() : 'ยังไม่เซ็นรับพัสดุ');
+    if(marked(returnedFlag ? x[returnedFlag] : '')) status = 'เซ็นรับตีกลับ';
+    else if(marked(signedFlag ? x[signedFlag] : '')) status = 'เซ็นรับพัสดุแล้ว';
+    else if(!signature && (signedFlag || returnedFlag)) status = 'ยังไม่เซ็นรับพัสดุ';
+    var item = {tracking: norm(x[awb]), status: status, lastUpdate: up ? parseDateTrk(x[up]) : ''};
+    if(stall){
+      var dayCount = Number(String(x[stall]||'').replace(/[^0-9.-]/g,''));
+      if(Number.isFinite(dayCount) && dayCount>=0) item.stallDays = dayCount;
+    }
+    return item;
+  }).filter(function(x){ return x.tracking; });
+}
+function putTrk(list, source){
+  var d = document.getElementById('day').value;
+  var all = loadTrk(Q);
+  var old = all.filter(function(x){ return x.shipDate!==d; });
+  var mp = {};
+  all.filter(function(x){ return x.shipDate===d; }).forEach(function(x){ mp[x.tracking] = x; });
+  list.forEach(function(x){
+    var previous = mp[x.tracking] || {tracking:x.tracking, shipDate:d};
+    mp[x.tracking] = Object.assign({}, previous, x, {shipDate:d, lastSource:source});
+  });
+  localStorage.setItem(Q, JSON.stringify(old.concat(Object.values(mp))));
+  render();
+}
+function showRawImportInfo(rows){
+  var unique = {}, sent = {};
+  getSet().forEach(function(x){ sent[x.tracking]=true; });
+  rows.forEach(function(x){ unique[x.tracking]=x; });
+  var parsed = Object.values(unique), matched = parsed.filter(function(x){ return sent[x.tracking]; });
+  var c = {delivered:0, returned:0, pending:0, unknown:0};
+  matched.forEach(function(x){ c[statusOf(x)]++; });
+  var el = document.getElementById('rawImportInfo');
+  el.style.display = 'block';
+  el.textContent = 'อ่านไฟล์ได้ '+parsed.length+' เลข · จับคู่กับทะเบียนส่งออกได้ '+matched.length+' เลข · เซ็นรับแล้ว '+c.delivered+' · ตีกลับ '+c.returned+' · ยังไม่เซ็นรับ '+c.pending+(c.unknown?' · อ่านไม่ได้ '+c.unknown:'');
+}
+document.getElementById('copyAll').addEventListener('click', async function(){
+  var s = getSet().map(function(x){ return x.tracking; });
+  var p = +document.getElementById('batchPick').value || 0;
+  var part = s.slice(p*500, p*500+500);
+  if(!part.length){ showToast('ยังไม่มีชุดที่เลือก', true); return; }
+  await navigator.clipboard.writeText(part.join('\n'));
+  document.getElementById('batchInfo').textContent = 'คัดลอกชุด '+(p+1)+' แล้ว: '+part.length+' เลข';
+  showToast('คัดลอก '+part.length+' เลขแล้ว');
+});
+document.getElementById('copyPending').addEventListener('click', async function(){
+  var claimed = claimedTracking();
+  var r = loadTrk(Q).filter(function(x){ return x.shipDate===document.getElementById('day').value && isAwaitingSignature(x) && !claimed[x.tracking]; }).map(function(x){ return x.tracking; });
+  await navigator.clipboard.writeText(r.join('\n'));
+  showToast('คัดลอก '+r.length+' เลขแล้ว');
+});
+document.getElementById('clearDayResults').addEventListener('click', function(){
+  var d = document.getElementById('day').value;
+  var all = loadTrk(Q);
+  var found = all.some(function(x){ return x.shipDate===d; });
+  if(!found){ showToast('ยังไม่มีผลตรวจของวันนี้ให้ล้าง', true); return; }
+  if(!confirm('ล้างผลตรวจทั้งหมดของวันที่ '+d+' ใช่ไหม? ทะเบียนส่งออกและข้อมูลเคลมจะไม่ถูกลบ')) return;
+  localStorage.setItem(Q, JSON.stringify(all.filter(function(x){ return x.shipDate!==d; })));
+  document.getElementById('rawFile').value = '';
+  document.getElementById('rawName').textContent = 'อัปโหลดผลสถานะ (เลือกได้หลายไฟล์)';
+  document.getElementById('rawImportInfo').style.display = 'none';
+  document.getElementById('rawUploadIssue').style.display = 'none';
+  render();
+  showToast('ล้างผลตรวจของวันที่ '+d+' แล้ว');
+});
+document.getElementById('rawFile').addEventListener('change', async function(e){
+  try{
+    var files = Array.from(e.target.files || []);
+    if(!files.length) return;
+    document.getElementById('rawUploadIssue').style.display = 'none';
+    var merged = [];
+    for(var i=0; i<files.length; i++){
+      document.getElementById('rawName').textContent = 'กำลังอ่านไฟล์ '+(i+1)+' / '+files.length+'…';
+      await new Promise(function(resolve){ setTimeout(resolve, 0); });
+      merged = merged.concat(await readTrkFile(files[i], true));
+    }
+    document.getElementById('rawName').textContent = 'กำลังจับคู่เลขพัสดุ…';
+    await new Promise(function(resolve){ setTimeout(resolve, 0); });
+    showRawImportInfo(merged);
+    putTrk(merged, 'raw');
+    document.getElementById('rawName').textContent = 'อัปโหลดผลสถานะแล้ว '+files.length+' ไฟล์';
+    showToast('รวมผล '+files.length+' ไฟล์แล้ว');
+  }
+  catch(err){
+    document.getElementById('rawUploadIssue').textContent = err.message;
+    document.getElementById('rawUploadIssue').style.display = 'block';
+    showToast(err.message, true);
+  }
+});
+document.getElementById('detailFile').addEventListener('change', async function(e){
+  try{ document.getElementById('detailName').textContent = e.target.files[0].name; putTrk(await readTrkFile(e.target.files[0]), 'detail'); }
+  catch(err){ showToast(err.message, true); }
+});
+document.getElementById('day').addEventListener('change', render);
+window.addEventListener('storage', function(e){
+  if(e.key==='pi_claims_history') render();
+});
+renderDays();
+</script>
+</body>
+</html>

@@ -4,290 +4,214 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%93%A6</text></svg>">
-<title>JK888 — Return & Claims / Report</title>
+<title>JK888 Return & Claims — Report</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --page-bg:#FAFAF9; --surface-1:#F4F3F1; --surface-2:#FFFFFF;
-    --text-primary:#1E1B29; --text-secondary:#6B6478; --text-muted:#A39CB0;
-    --border:rgba(31,27,42,0.09);
-    --fill-primary:#17151F; --on-primary:#FFFFFF;
-    --bg-success:#E1F5EE; --text-success:#085041;
-    --bg-danger:#FAECE7;  --text-danger:#4A1B0C;
-    --bg-warning:#FFF3DE; --text-warning:#B4670A;
-    --bg-pro:#FBEAF0;     --text-pro:#4B1528;
-    --bg-accent:#EEEDFE;  --text-accent:#3C3489;
-    --radius-lg:12px; --radius-md:10px; --radius-pill:999px;
-    --font-display:'Poppins',sans-serif; --font-body:'Inter',-apple-system,sans-serif; --font-mono:'JetBrains Mono',monospace;
+    --bg:#FBF2E2; --surface:#FFFFFF; --surface-kraft:#F3E4C8;
+    --ink:#4A3826; --ink-soft:#93805F; --ink-faint:#C9B594;
+    --border:rgba(74,56,38,0.15);
+    --stamp-red:#C94F4F; --stamp-red-deep:#A83A3A; --stamp-red-soft:#F3DEDE; --on-stamp:#FFFFFF;
+    --stamp-green:#5FA980; --stamp-green-soft:#DCEEE2; --stamp-green-deep:#3F7D5C;
+    --radius-lg:22px; --radius-md:16px; --radius-pill:999px;
+    --font-display:'Mitr',sans-serif; --font-body:'Sarabun',sans-serif; --font-mono:'JetBrains Mono',monospace;
+    --text-danger:var(--stamp-red-deep); --text-muted:var(--ink-faint);
+    --bg-success:var(--stamp-green-soft); --border-success:var(--stamp-green); --text-success:var(--stamp-green-deep);
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --page-bg:#131019; --surface-1:#1C1826; --surface-2:#211D2C;
-      --text-primary:#F3F1FA; --text-secondary:#B7AFC7; --text-muted:#7A7289;
-      --border:rgba(243,241,250,0.12);
-      --fill-primary:#F3F1FA; --on-primary:#17151F;
-      --bg-success:#04342C; --text-success:#5DCAA5;
-      --bg-danger:#4A1B0C;  --text-danger:#F0997B;
-      --bg-warning:#412402; --text-warning:#FAC775;
-      --bg-pro:#4B1528;     --text-pro:#ED93B1;
-      --bg-accent:#26215C;  --text-accent:#AFA9EC;
+      --bg:#241C13; --surface:#332619; --surface-kraft:#3E2F1E;
+      --ink:#F6EBDB; --ink-soft:#CBB693; --ink-faint:#8D7856;
+      --border:rgba(246,235,219,0.14);
+      --stamp-red:#E27878; --stamp-red-deep:#F0A0A0; --stamp-red-soft:#4A2C2C; --on-stamp:#2A1010;
+      --stamp-green:#7FC29E; --stamp-green-soft:#25392E; --stamp-green-deep:#9FDABB;
     }
   }
   *{box-sizing:border-box;}
-  body{ margin:0; background:var(--page-bg); color:var(--text-primary); font-family:var(--font-body); -webkit-font-smoothing:antialiased; }
-  button{font-family:inherit; cursor:pointer;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:16px; -webkit-font-smoothing:antialiased; }
+  .disp{font-family:var(--font-display);}
   .mono{font-family:var(--font-mono);}
-  .disp{font-family:var(--font-display); letter-spacing:-0.01em;}
+  input,select{ height:46px; border-radius:var(--radius-md); border:1.5px solid var(--border); background:var(--surface); color:var(--ink); padding:0 14px; font-size:15px; font-family:inherit; width:100%; }
+  button{font-family:inherit; cursor:pointer;}
+  label{font-size:14px; font-weight:600; color:var(--ink-soft); display:block; margin:0 0 6px;}
 
   .shell{display:flex; min-height:100vh;}
-  .sidebar{width:180px; flex-shrink:0; background:var(--surface-1); padding:18px 12px; border-right:0.5px solid var(--border);}
-  @media (max-width:768px){ .shell{flex-direction:column;} .sidebar{width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border-right:none; border-bottom:0.5px solid var(--border);} .sidebar .navlist{display:flex; flex-direction:row; gap:4px;} .sidebar .navlabel{display:none;} }
-  .brand{display:flex; align-items:center; gap:8px; margin-bottom:20px;}
+  .sidebar{width:220px; flex-shrink:0; background:var(--surface-kraft); padding:24px 16px; border-right:1.5px solid var(--border);}
+  @media (max-width:768px){ .shell{flex-direction:column;} .sidebar{width:100%; display:flex; align-items:center; gap:14px; padding:14px 18px; border-right:none; border-bottom:1.5px solid var(--border);} .sidebar .navlist{display:flex; flex-direction:row; gap:6px; overflow-x:auto;} .sidebar .navlabel{white-space:nowrap;} }
+
+  .brand{display:flex; align-items:center; gap:10px; margin-bottom:24px; text-decoration:none; color:inherit; position:relative;}
   @media (max-width:768px){ .brand{margin-bottom:0;} }
-  .brand-icon{width:28px; height:28px; border-radius:8px; background:var(--fill-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
-  .brand-icon i{color:var(--on-primary); font-size:15px;}
-  .brand-name{font-size:13px; font-weight:600; margin:0; line-height:1.3;}
-  .navlist{display:flex; flex-direction:column; gap:2px;}
-  .navitem{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; text-decoration:none; color:var(--text-secondary); font-size:13px; white-space:nowrap;}
-  .navitem i{font-size:16px; flex-shrink:0;}
-  .navitem.active{background:var(--bg-accent); color:var(--text-accent);}
+  .brand-stamp{position:absolute; top:-18px; left:-14px; width:46px; height:46px; border-radius:50%; border:2.5px solid var(--stamp-red); opacity:0.85; transform:rotate(-12deg); display:flex; align-items:center; justify-content:center;}
+  .brand-stamp::after{content:'↩'; font-size:20px; font-weight:700; color:var(--stamp-red);}
+  @media (max-width:768px){ .brand-stamp{display:none;} }
+  .brand-icon{font-size:26px; line-height:1; position:relative; z-index:1;}
+  .brand-name{font-family:var(--font-display); font-size:14.5px; font-weight:700; margin:0; line-height:1.3; position:relative; z-index:1;}
 
-  .main{flex:1; padding:22px 26px; min-width:0;}
-  @media (max-width:768px){ .main{padding:16px;} }
-  .topbar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
-  .crumb{font-size:11px; color:var(--text-muted); margin:0;}
-  .pagetitle{font-size:19px; font-weight:600; margin:2px 0 0; font-family:var(--font-display);}
-  .seg{display:inline-flex; background:var(--surface-1); border-radius:var(--radius-pill); padding:3px;}
-  .seg button{border:none; background:transparent; padding:7px 16px; border-radius:var(--radius-pill); font-size:12.5px; color:var(--text-secondary); width:auto;}
-  .seg button.active{background:var(--fill-primary); color:var(--on-primary);}
+  .navlist{display:flex; flex-direction:column; gap:5px;}
+  .navitem{display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:var(--radius-md); text-decoration:none; color:var(--ink-soft); font-family:var(--font-display); font-size:15px; font-weight:500; white-space:nowrap;}
+  .navitem .navicon{font-size:18px;}
+  .navitem.active{background:var(--stamp-red); color:var(--on-stamp);}
 
-  .card{background:var(--surface-2); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:20px; margin-bottom:16px;}
-  .section-label{font-size:12.5px; font-weight:600; color:var(--text-secondary); margin:0 0 12px;}
+  .main{flex:1; padding:28px 30px; min-width:0;}
+  @media (max-width:768px){ .main{padding:18px;} }
+  .pagetitle{font-family:var(--font-display); font-size:26px; font-weight:700; margin:0 0 4px;}
+  .pagesub{font-size:15px; color:var(--ink-soft); margin:0 0 24px;}
 
-  .count-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;}
-  @media (max-width:640px){ .count-grid{grid-template-columns:1fr;} }
-  .kpi-card{border-radius:var(--radius-lg); padding:16px; background:var(--surface-2); border:0.5px solid var(--border);}
-  .kpi-label{font-size:11.5px; margin:0 0 5px;}
-  .kpi-num{font-size:26px; font-weight:600; margin:0;}
+  .section-divider{display:flex; align-items:center; gap:12px; margin:32px 0 16px;}
+  .section-divider:first-of-type{margin-top:0;}
+  .section-divider .icon-badge{width:40px; height:40px; border-radius:50%; background:var(--stamp-red); color:var(--on-stamp); display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;}
+  .section-divider h2{font-family:var(--font-display); font-size:21px; font-weight:700; margin:0;}
 
-  table{width:100%; border-collapse:collapse; font-size:12.5px;}
-  th{text-align:left; padding:8px 8px; color:var(--text-secondary); font-weight:500; border-bottom:0.5px solid var(--border); white-space:nowrap;}
-  td{padding:8px 8px; border-bottom:0.5px solid var(--border); vertical-align:middle;}
-  .empty{text-align:center; padding:26px; color:var(--text-muted); font-size:13px;}
+  .card{background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-lg); padding:22px; margin-bottom:18px;}
+  .section-label{font-family:var(--font-display); font-size:17px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .hint{font-size:13.5px; color:var(--ink-soft); margin:0 0 12px; line-height:1.5;}
 
-  .rank-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:0.5px solid var(--border);}
-  .rank-row:last-child{border-bottom:none;}
-  .rank-badge{width:22px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; flex-shrink:0; background:var(--bg-accent); color:var(--text-accent);}
-  .rank-name{font-size:12.5px; flex:1;}
-  .rank-bar-track{flex:1; height:6px; background:var(--surface-1); border-radius:99px; overflow:hidden; max-width:140px;}
-  .rank-bar-fill{height:100%; border-radius:99px; background:var(--text-pro);}
-  .rank-num{font-size:12.5px; font-weight:600; width:40px; text-align:right; flex-shrink:0;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:900px){ .grid2{grid-template-columns:1fr;} }
+
+  .pie-wrap{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+  .pie-chart{width:150px; height:150px; border-radius:50%; flex-shrink:0;}
+  .pie-legend{flex:1; min-width:160px;}
+  .legend-row{display:flex; align-items:center; gap:9px; padding:7px 0;}
+  .legend-dot{width:12px; height:12px; border-radius:50%; flex-shrink:0;}
+  .legend-name{flex:1; font-size:14px; font-weight:500;}
+  .legend-pct{font-family:var(--font-display); font-size:15px; font-weight:600;}
+
+  table{width:100%; border-collapse:collapse; font-size:14.5px;}
+  th{text-align:left; padding:9px 6px; color:var(--ink-soft); font-weight:600; border-bottom:1.5px solid var(--border); font-size:12.5px;}
+  td{padding:9px 6px; border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  .rank-num{width:24px; height:24px; border-radius:50%; background:var(--surface-kraft); display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:12px; font-weight:700; color:var(--ink-soft);}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px;}
+  .stat-card{border-radius:var(--radius-lg); padding:18px; background:var(--surface-kraft);}
+  .stat-card.money{background:var(--stamp-red-soft);}
+  .stat-card.money .stat-num{color:var(--stamp-red-deep);}
+  .stat-label{font-size:13px; color:var(--ink-soft); font-weight:600; margin:0 0 6px;}
+  .stat-num{font-family:var(--font-display); font-size:26px; font-weight:700; margin:0; color:var(--ink);}
+
+  .reason-note{background:var(--surface-kraft); border-radius:var(--radius-md); padding:12px 16px; font-size:13.5px; color:var(--ink-soft); margin-top:14px; display:flex; gap:8px; align-items:flex-start;}
+
+  .detail-link{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-display); font-size:14.5px; font-weight:600; color:var(--stamp-red-deep); text-decoration:none; margin-top:4px;}
+  .detail-link:hover{text-decoration:underline;}
+
+  .mock-tag{display:inline-block; font-size:12.5px; font-weight:600; color:var(--stamp-red-deep); background:var(--stamp-red-soft); padding:5px 12px; border-radius:var(--radius-pill); margin-bottom:18px;}
 </style>
 </head>
 <body>
 
 <div class="shell">
   <aside class="sidebar">
-    <a class="brand" href="pi-report.html" style="text-decoration:none; color:inherit; cursor:pointer;"><div class="brand-icon" style="font-size:15px;">📦</div><p class="brand-name disp">JK888<br>Return &amp; Claims</p></a>
+    <a class="brand" href="pi-report.html"><div class="brand-stamp"></div><div class="brand-icon">📦</div><p class="brand-name">JK888<br>Return &amp; Claims</p></a>
     <nav class="navlist">
-      <a class="navitem active" href="pi-report.html"><i class="ti ti-chart-bar"></i><span class="navlabel">Report</span></a>
-      <a class="navitem" href="pi-returns.html"><i class="ti ti-corner-down-left"></i><span class="navlabel">Return</span></a>
-      <a class="navitem" href="pi-claims.html"><i class="ti ti-file-alert"></i><span class="navlabel">Claims</span></a>
-      <a class="navitem" href="pi-documents.html"><i class="ti ti-file-text"></i><span class="navlabel">Documents</span></a>
-      <a class="navitem" href="pi-packing.html"><i class="ti ti-box"></i><span class="navlabel">Packing</span></a>
+      <a class="navitem active" href="pi-report.html"><span class="navicon">📊</span><span class="navlabel">Report</span></a>
+      <a class="navitem" href="pi-returns.html"><span class="navicon">↩️</span><span class="navlabel">Return</span></a>
+      <a class="navitem" href="pi-claims.html"><span class="navicon">🧾</span><span class="navlabel">Claims</span></a>
+      <a class="navitem" href="pi-enter-data.html"><span class="navicon">✏️</span><span class="navlabel">Enter data</span></a>
+      <a class="navitem" href="pi-tracking.html"><span class="navicon">🔎</span><span class="navlabel">Tracking</span></a>
+      <a class="navitem" href="pi-archive.html"><span class="navicon">🗂️</span><span class="navlabel">Archive</span></a>
     </nav>
   </aside>
 
   <main class="main">
-    <div class="topbar">
-      <div><p class="crumb">Return &amp; Claims / Report</p><p class="pagetitle">Report</p></div>
+    <p class="pagetitle">Report</p>
+    <p class="pagesub">ภาพรวมพัสดุตีกลับและงานเคลม</p>
+
+    <span class="mock-tag">🧪 ข้อมูลสมมติสำหรับดูตัวอย่างดีไซน์ — รอต่อข้อมูลจริงทีหลัง</span>
+
+    <div class="section-divider">
+      <div class="icon-badge">📦</div>
+      <h2>พัสดุตีกลับ</h2>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <p class="section-label">🥧 อัตราตีกลับต่อยอดส่งออก</p>
+        <p class="hint">เดือนนี้ — เทียบสัดส่วนพัสดุที่ตีกลับกับยอดส่งออกทั้งหมด</p>
+        <div class="pie-wrap">
+          <div class="pie-chart" style="background:conic-gradient(from 0deg, #C94F4F 0% 8%, #E8D9C4 8% 100%);"></div>
+          <div class="pie-legend">
+            <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">ตีกลับ</span><span class="legend-pct">8%</span></div>
+            <div class="legend-row"><div class="legend-dot" style="background:#E8D9C4;"></div><span class="legend-name">ส่งสำเร็จ</span><span class="legend-pct">92%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">💰 ยอด COD ของพัสดุตีกลับ</p>
+        <p class="hint">เดือนนี้ — มูลค่า COD รวมของพัสดุที่ตีกลับมา</p>
+        <div class="stat-grid">
+          <div class="stat-card money"><p class="stat-label">ยอด COD ตีกลับรวม</p><p class="stat-num">฿24,650</p></div>
+          <div class="stat-card"><p class="stat-label">จำนวนพัสดุ</p><p class="stat-num">142</p></div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
-      <div class="topbar" style="margin-bottom:0;">
-        <p class="section-label" style="margin:0;">สินค้าตีกลับมากที่สุด</p>
-        <div class="seg" id="periodSeg">
-          <button class="active" data-period="week">รอบสัปดาห์นี้</button>
-          <button data-period="month">รอบเดือนนี้</button>
-        </div>
-      </div>
-      <p id="periodRangeLabel" style="font-size:11px; color:var(--text-muted); margin:8px 0 14px;"></p>
-      <div id="topProductsRank"></div>
-      <div class="empty" id="topProductsEmpty" style="display:none;">ไม่มีข้อมูลตีกลับในช่วงนี้</div>
+      <p class="section-label">🏆 สินค้าที่ตีกลับมากที่สุด (10 อันดับแรก)</p>
+      <p class="hint">เดือนนี้</p>
+      <table>
+        <thead><tr><th></th><th>ชื่อสินค้า</th><th style="text-align:right;">จำนวนชิ้น</th></tr></thead>
+        <tbody>
+          <tr><td><span class="rank-num">1</span></td><td>แลกซื้อ-ผ้า</td><td style="text-align:right;">90</td></tr>
+          <tr><td><span class="rank-num">2</span></td><td>กาวซ่อมรองเท้า</td><td style="text-align:right;">33</td></tr>
+          <tr><td><span class="rank-num">3</span></td><td>ไม้แขวน 5 ช่อง</td><td style="text-align:right;">25</td></tr>
+          <tr><td><span class="rank-num">4</span></td><td>สติ๊กเกอร์ดับกลิ่นห้องน้ำ</td><td style="text-align:right;">16</td></tr>
+          <tr><td><span class="rank-num">5</span></td><td>โคมไฟจิ๋ว</td><td style="text-align:right;">15</td></tr>
+          <tr><td><span class="rank-num">6</span></td><td>จอขยายมือถือ</td><td style="text-align:right;">14</td></tr>
+          <tr><td><span class="rank-num">7</span></td><td>น้ำหอมในรถยนต์</td><td style="text-align:right;">13</td></tr>
+          <tr><td><span class="rank-num">8</span></td><td>น้ำหอมดับกลิ่นชักโครก</td><td style="text-align:right;">12</td></tr>
+          <tr><td><span class="rank-num">9</span></td><td>สติ๊กเกอร์ซ่อมผ้า</td><td style="text-align:right;">12</td></tr>
+          <tr><td><span class="rank-num">10</span></td><td>สับกระเทียม</td><td style="text-align:right;">10</td></tr>
+        </tbody>
+      </table>
     </div>
 
-    <p class="section-label">สรุปเคลม (นับจำนวน ไม่รวมยอดเงิน)</p>
-    <div class="count-grid">
-      <div class="kpi-card" style="background:var(--bg-success); border:none;">
-        <p class="kpi-label" style="color:var(--text-success);">เคลมสำเร็จ</p>
-        <p class="kpi-num disp" style="color:var(--text-success);" id="claimSuccess">0</p>
+    <a class="detail-link" href="pi-returns.html">ดูรายละเอียดเพิ่มเติมทั้งหมด <i class="ti ti-arrow-right"></i></a>
+
+    <div class="section-divider">
+      <div class="icon-badge">🧾</div>
+      <h2>งานเคลม</h2>
+    </div>
+
+    <div class="card">
+      <p class="section-label">🥧 ผลการเคลม</p>
+      <p class="hint">สะสมทั้งหมด</p>
+      <div class="pie-wrap">
+        <div class="pie-chart" style="background:conic-gradient(from 0deg, #5FA980 0% 76%, #C94F4F 76% 100%);"></div>
+        <div class="pie-legend">
+          <div class="legend-row"><div class="legend-dot" style="background:#5FA980;"></div><span class="legend-name">เคลมสำเร็จ</span><span class="legend-pct">76%</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">เคลมไม่สำเร็จ</span><span class="legend-pct">24%</span></div>
+        </div>
       </div>
-      <div class="kpi-card" style="background:var(--bg-danger); border:none;">
-        <p class="kpi-label" style="color:var(--text-danger);">เคลมไม่สำเร็จ</p>
-        <p class="kpi-num disp" style="color:var(--text-danger);" id="claimFailed">0</p>
-      </div>
-      <div class="kpi-card" style="background:var(--bg-accent); border:none;">
-        <p class="kpi-label" style="color:var(--text-accent);">รอดำเนินการทั้งหมด</p>
-        <p class="kpi-num disp" style="color:var(--text-accent);" id="claimPending">0</p>
+      <div class="reason-note"><span>💡</span><span>เหตุผลที่เคลมไม่สำเร็จบ่อยที่สุด: <b>สินค้าเปราะบาง/ของเหลว ไม่เข้าเงื่อนไขเคลม</b></span></div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">💵 ยอดเงินเคลม</p>
+      <div class="stat-grid">
+        <div class="stat-card money"><p class="stat-label">รอดำเนินการ</p><p class="stat-num">฿18,420</p></div>
+        <div class="stat-card money"><p class="stat-label">เคลมสำเร็จ</p><p class="stat-num">฿52,900</p></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="topbar" style="margin-bottom:0;">
-        <p class="section-label" style="margin:0;">ผลงานคนแพ็ค</p>
-        <div class="seg" id="packerPeriodSeg">
-          <button class="active" data-pperiod="today">วันนี้</button>
-          <button data-pperiod="week">สัปดาห์นี้</button>
-          <button data-pperiod="month">เดือนนี้</button>
-        </div>
+      <p class="section-label">📋 จำนวนออเดอร์ที่เคลม</p>
+      <div class="stat-grid">
+        <div class="stat-card"><p class="stat-label">เคลมทั้งหมด</p><p class="stat-num">150</p></div>
+        <div class="stat-card"><p class="stat-label">รอดำเนินการ</p><p class="stat-num">73</p></div>
+        <div class="stat-card"><p class="stat-label">สำเร็จ</p><p class="stat-num">59</p></div>
+        <div class="stat-card"><p class="stat-label">ไม่สำเร็จ</p><p class="stat-num">18</p></div>
       </div>
-      <p id="packerRangeLabel" style="font-size:11px; color:var(--text-muted); margin:8px 0 14px;"></p>
-      <div id="packerRank"></div>
-      <div class="empty" id="packerRankEmpty" style="display:none;">ไม่มีข้อมูลงานแพ็คในช่วงนี้</div>
     </div>
+
+    <a class="detail-link" href="pi-claims.html">ดูรายละเอียดเพิ่มเติมทั้งหมด <i class="ti ti-arrow-right"></i></a>
+
   </main>
 </div>
 
-<script>
-function getReturnsData(){
-  try{ return JSON.parse(localStorage.getItem('pi_returns_data') || '[]'); } catch(e){ return []; }
-}
-function getClaims(){
-  try{ return JSON.parse(localStorage.getItem('pi_claims_history') || '[]'); } catch(e){ return []; }
-}
-
-function startOfWeek(d){
-  var day = d.getDay(); // 0=Sun
-  var diff = (day === 0 ? -6 : 1) - day; // เริ่มจันทร์
-  var monday = new Date(d);
-  monday.setDate(d.getDate() + diff);
-  monday.setHours(0,0,0,0);
-  return monday;
-}
-function toISO(d){
-  var y = d.getFullYear();
-  var m = String(d.getMonth()+1).padStart(2,'0');
-  var day = String(d.getDate()).padStart(2,'0');
-  return y+'-'+m+'-'+day;
-}
-var thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-
-function renderTopProducts(period){
-  var now = new Date();
-  var from, to, label;
-  if(period === 'week'){
-    var mon = startOfWeek(now);
-    var sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    from = toISO(mon); to = toISO(sun);
-    label = 'สัปดาห์ ' + mon.getDate() + ' - ' + sun.getDate() + ' ' + thaiMonths[sun.getMonth()] + ' ' + (sun.getFullYear()+543);
-    if(mon.getMonth() !== sun.getMonth()) label = 'สัปดาห์ ' + mon.getDate() + ' ' + thaiMonths[mon.getMonth()] + ' - ' + sun.getDate() + ' ' + thaiMonths[sun.getMonth()] + ' ' + (sun.getFullYear()+543);
-  } else {
-    var first = new Date(now.getFullYear(), now.getMonth(), 1);
-    var last = new Date(now.getFullYear(), now.getMonth()+1, 0);
-    from = toISO(first); to = toISO(last);
-    label = '1-' + last.getDate() + ' ' + thaiMonths[first.getMonth()] + ' ' + (first.getFullYear()+543);
-  }
-  document.getElementById('periodRangeLabel').textContent = label;
-
-  var data = getReturnsData().filter(function(r){ return r.date && r.date >= from && r.date <= to; });
-  var byProduct = {};
-  data.forEach(function(r){
-    if(!byProduct[r.product]) byProduct[r.product] = 0;
-    byProduct[r.product] += r.qty;
-  });
-  var entries = Object.keys(byProduct).map(function(p){ return {product:p, qty:byProduct[p]}; });
-  entries.sort(function(a,b){ return b.qty - a.qty; });
-  entries = entries.slice(0, 10);
-
-  var box = document.getElementById('topProductsRank');
-  document.getElementById('topProductsEmpty').style.display = entries.length ? 'none' : 'block';
-  if(!entries.length){ box.innerHTML = ''; return; }
-  var max = entries[0].qty;
-  box.innerHTML = entries.map(function(e, i){
-    var pct = Math.round((e.qty/max)*100);
-    return '<div class="rank-row">' +
-      '<div class="rank-badge">'+(i+1)+'</div>' +
-      '<span class="rank-name">'+e.product+'</span>' +
-      '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+pct+'%;"></div></div>' +
-      '<span class="rank-num">'+e.qty+'</span>' +
-    '</div>';
-  }).join('');
-}
-
-document.querySelectorAll('#periodSeg button').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('#periodSeg button').forEach(function(b){b.classList.remove('active');});
-    btn.classList.add('active');
-    renderTopProducts(btn.getAttribute('data-period'));
-  });
-});
-
-function renderClaimCounts(){
-  var claims = getClaims();
-  var counts = {transferred:0, rejected:0, pending:0};
-  claims.forEach(function(c){ counts[c.status] = (counts[c.status]||0) + 1; });
-  document.getElementById('claimSuccess').textContent = counts.transferred;
-  document.getElementById('claimFailed').textContent = counts.rejected;
-  document.getElementById('claimPending').textContent = counts.pending;
-}
-
-function getPackingData(){
-  try{ return JSON.parse(localStorage.getItem('pi_packing_manual') || '[]'); } catch(e){ return []; }
-}
-
-function renderPackerRank(period){
-  var now = new Date();
-  var from, to, label;
-  if(period === 'today'){
-    from = to = toISO(now);
-    label = 'วันที่ ' + from;
-  } else if(period === 'week'){
-    var mon = startOfWeek(now);
-    var sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    from = toISO(mon); to = toISO(sun);
-    label = 'ช่วง ' + from + ' ถึง ' + to;
-  } else {
-    var first = new Date(now.getFullYear(), now.getMonth(), 1);
-    var last = new Date(now.getFullYear(), now.getMonth()+1, 0);
-    from = toISO(first); to = toISO(last);
-    label = 'ช่วง ' + from + ' ถึง ' + to;
-  }
-  document.getElementById('packerRangeLabel').textContent = label;
-
-  var data = getPackingData().filter(function(r){ return r.date && r.date >= from && r.date <= to; });
-  var counts = {};
-  data.forEach(function(r){ counts[r.packer] = (counts[r.packer]||0) + (r.totalQty||0); });
-  var entries = Object.keys(counts).map(function(k){ return {packer:k, count:counts[k]}; });
-  entries.sort(function(a,b){ return b.count - a.count; });
-
-  var box = document.getElementById('packerRank');
-  document.getElementById('packerRankEmpty').style.display = entries.length ? 'none' : 'block';
-  if(!entries.length){ box.innerHTML = ''; return; }
-  var max = entries[0].count;
-  box.innerHTML = entries.map(function(e, i){
-    var pct = Math.round((e.count/max)*100);
-    return '<div class="rank-row">' +
-      '<div class="rank-badge">'+(i+1)+'</div>' +
-      '<span class="rank-name">'+e.packer+'</span>' +
-      '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:'+pct+'%;"></div></div>' +
-      '<span class="rank-num">'+e.count+'</span>' +
-    '</div>';
-  }).join('');
-}
-document.querySelectorAll('#packerPeriodSeg button').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('#packerPeriodSeg button').forEach(function(b){b.classList.remove('active');});
-    btn.classList.add('active');
-    renderPackerRank(btn.getAttribute('data-pperiod'));
-  });
-});
-
-renderTopProducts('week');
-renderClaimCounts();
-renderPackerRank('today');
-</script>
 </body>
 </html>
