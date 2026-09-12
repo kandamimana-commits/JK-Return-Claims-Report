@@ -134,8 +134,8 @@
         <div class="pie-wrap">
           <div class="pie-chart" style="background:conic-gradient(from 0deg, #C94F4F 0% 8%, #E8D9C4 8% 100%);"></div>
           <div class="pie-legend">
-            <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">ตีกลับ</span><span class="legend-pct">8%</span></div>
-            <div class="legend-row"><div class="legend-dot" style="background:#E8D9C4;"></div><span class="legend-name">ส่งสำเร็จ</span><span class="legend-pct">92%</span></div>
+            <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">ตีกลับ</span><span class="legend-pct" id="returnPct">0%</span></div>
+            <div class="legend-row"><div class="legend-dot" style="background:#E8D9C4;"></div><span class="legend-name">ส่งสำเร็จ</span><span class="legend-pct" id="successPct">0%</span></div>
           </div>
         </div>
       </div>
@@ -144,8 +144,8 @@
         <p class="section-label">💰 ยอด COD ของพัสดุตีกลับ</p>
         <p class="hint">เดือนนี้ — มูลค่า COD รวมของพัสดุที่ตีกลับมา</p>
         <div class="stat-grid">
-          <div class="stat-card money"><p class="stat-label">ยอด COD ตีกลับรวม</p><p class="stat-num">฿24,650</p></div>
-          <div class="stat-card"><p class="stat-label">จำนวนพัสดุ</p><p class="stat-num">142</p></div>
+          <div class="stat-card money"><p class="stat-label">ยอด COD ตีกลับรวม</p><p class="stat-num" id="returnCod">฿0</p></div>
+          <div class="stat-card"><p class="stat-label">จำนวนพัสดุ</p><p class="stat-num" id="returnCount">0</p></div>
         </div>
       </div>
     </div>
@@ -155,7 +155,7 @@
       <p class="hint">เดือนนี้</p>
       <table>
         <thead><tr><th></th><th>ชื่อสินค้า</th><th style="text-align:right;">จำนวนชิ้น</th></tr></thead>
-        <tbody>
+        <tbody id="topReturns">
           <tr><td><span class="rank-num">1</span></td><td>แลกซื้อ-ผ้า</td><td style="text-align:right;">90</td></tr>
           <tr><td><span class="rank-num">2</span></td><td>กาวซ่อมรองเท้า</td><td style="text-align:right;">33</td></tr>
           <tr><td><span class="rank-num">3</span></td><td>ไม้แขวน 5 ช่อง</td><td style="text-align:right;">25</td></tr>
@@ -181,10 +181,10 @@
       <p class="section-label">🥧 ผลการเคลม</p>
       <p class="hint">สะสมทั้งหมด</p>
       <div class="pie-wrap">
-        <div class="pie-chart" style="background:conic-gradient(from 0deg, #5FA980 0% 76%, #C94F4F 76% 100%);"></div>
+        <div class="pie-chart" id="claimPie" style="background:conic-gradient(from 0deg, #5FA980 0% 0%, #C94F4F 0% 100%);"></div>
         <div class="pie-legend">
-          <div class="legend-row"><div class="legend-dot" style="background:#5FA980;"></div><span class="legend-name">เคลมสำเร็จ</span><span class="legend-pct">76%</span></div>
-          <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">เคลมไม่สำเร็จ</span><span class="legend-pct">24%</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#5FA980;"></div><span class="legend-name">เคลมสำเร็จ</span><span class="legend-pct" id="claimSuccessPct">0%</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">เคลมไม่สำเร็จ</span><span class="legend-pct" id="claimRejectPct">0%</span></div>
         </div>
       </div>
       <div class="reason-note"><span>💡</span><span>เหตุผลที่เคลมไม่สำเร็จบ่อยที่สุด: <b>สินค้าเปราะบาง/ของเหลว ไม่เข้าเงื่อนไขเคลม</b></span></div>
@@ -193,18 +193,18 @@
     <div class="card">
       <p class="section-label">💵 ยอดเงินเคลม</p>
       <div class="stat-grid">
-        <div class="stat-card money"><p class="stat-label">รอดำเนินการ</p><p class="stat-num">฿18,420</p></div>
-        <div class="stat-card money"><p class="stat-label">เคลมสำเร็จ</p><p class="stat-num">฿52,900</p></div>
+        <div class="stat-card money"><p class="stat-label">รอดำเนินการ</p><p class="stat-num" id="claimPendingAmt">฿0</p></div>
+        <div class="stat-card money"><p class="stat-label">เคลมสำเร็จ</p><p class="stat-num" id="claimPaidAmt">฿0</p></div>
       </div>
     </div>
 
     <div class="card">
       <p class="section-label">📋 จำนวนออเดอร์ที่เคลม</p>
       <div class="stat-grid">
-        <div class="stat-card"><p class="stat-label">เคลมทั้งหมด</p><p class="stat-num">150</p></div>
-        <div class="stat-card"><p class="stat-label">รอดำเนินการ</p><p class="stat-num">73</p></div>
-        <div class="stat-card"><p class="stat-label">สำเร็จ</p><p class="stat-num">59</p></div>
-        <div class="stat-card"><p class="stat-label">ไม่สำเร็จ</p><p class="stat-num">18</p></div>
+        <div class="stat-card"><p class="stat-label">เคลมทั้งหมด</p><p class="stat-num" id="claimTotal">0</p></div>
+        <div class="stat-card"><p class="stat-label">รอดำเนินการ</p><p class="stat-num" id="claimPending">0</p></div>
+        <div class="stat-card"><p class="stat-label">สำเร็จ</p><p class="stat-num" id="claimPaid">0</p></div>
+        <div class="stat-card"><p class="stat-label">ไม่สำเร็จ</p><p class="stat-num" id="claimRejected">0</p></div>
       </div>
     </div>
 
@@ -213,5 +213,26 @@
   </main>
 </div>
 
+<script>
+(function(){
+  function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
+  function norm(v){return String(v||'').replace(/[^A-Za-z0-9]/g,'')}
+  function money(v){return '฿'+Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+  var outbound=load('pi_outbound_batches'), results=load('pi_tracking_results'), returns=load('pi_returns_data'), claims=load('pi_claims_history');
+  var outMap={}; outbound.forEach(function(x){outMap[norm(x.tracking)]=x});
+  var returned={}, returnCod={}; results.forEach(function(x){if(/ตีกลับ|return|\brto\b/i.test(String(x.status||''))) returned[norm(x.tracking)]=true});
+  returns.forEach(function(x){var id=norm(x.tracking); returned[id]=true; if(x.cod!==null && x.cod!==undefined && x.cod!=='') returnCod[id]=Number(x.cod||0)});
+  var ids=Object.keys(returned), cod=ids.reduce(function(sum,id){return sum+(returnCod[id]===undefined ? Number((outMap[id]||{}).cod||0) : returnCod[id])},0);
+  document.getElementById('returnCod').textContent=money(cod); document.getElementById('returnCount').textContent=ids.length;
+  var sent=outbound.length, rp=sent?Math.round(ids.length/sent*100):0; document.getElementById('returnPct').textContent=rp+'%'; document.getElementById('successPct').textContent=(100-rp)+'%';
+  var product={}; returns.forEach(function(x){product[x.product]=(product[x.product]||0)+Number(x.qty||1)});
+  document.getElementById('topReturns').innerHTML=Object.keys(product).sort(function(a,b){return product[b]-product[a]}).slice(0,10).map(function(p,i){return '<tr><td><span class="rank-num">'+(i+1)+'</span></td><td>'+p+'</td><td style="text-align:right;">'+product[p]+'</td></tr>'}).join('')||'<tr><td colspan="3" style="text-align:center;">ยังไม่มีข้อมูลตีกลับ</td></tr>';
+  var pending=claims.filter(function(x){return x.status==='pending'}), paid=claims.filter(function(x){return x.status==='transferred'}), rejected=claims.filter(function(x){return x.status==='rejected'}), total=claims.length;
+  function sum(rows,key){return rows.reduce(function(s,x){return s+Number(x[key]||0)},0)}
+  document.getElementById('claimTotal').textContent=total; document.getElementById('claimPending').textContent=pending.length; document.getElementById('claimPaid').textContent=paid.length; document.getElementById('claimRejected').textContent=rejected.length;
+  document.getElementById('claimPendingAmt').textContent=money(sum(pending,'amount')); document.getElementById('claimPaidAmt').textContent=money(sum(paid,'refundAmount'));
+  var cp=total?Math.round(paid.length/total*100):0; document.getElementById('claimSuccessPct').textContent=cp+'%'; document.getElementById('claimRejectPct').textContent=(total?Math.round(rejected.length/total*100):0)+'%'; document.getElementById('claimPie').style.background='conic-gradient(from 0deg, #5FA980 0% '+cp+'%, #C94F4F '+cp+'% 100%)';
+})();
+</script>
 </body>
 </html>

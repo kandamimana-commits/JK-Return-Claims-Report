@@ -220,17 +220,19 @@ document.getElementById('outboundFileInput').addEventListener('change', function
           var cols = Object.keys(data[0]);
           var awbCol = cols.find(function(c){ return /awb|เลขพัสดุ|tracking|waybill/i.test(c); });
           var dateCol = cols.find(function(c){ return /เวลาที่บันทึก|วันที่ส่ง|วันที่สร้าง|created/i.test(c); });
+          var codCol = cols.find(function(c){ return /ยอดเงิน\s*cod|cod amount|^cod$/i.test(c); });
+          var productCol = cols.find(function(c){ return /หมายเหตุ|รายละเอียด.*พัสดุ|สินค้า|product/i.test(c); });
           if(!awbCol) return reject(new Error('ไม่พบคอลัมน์ AWB ในไฟล์ '+file.name));
-          resolve(data.map(function(row){ return {tracking:String(row[awbCol]||'').replace(/[^A-Za-z0-9]/g,'').trim(), date:outboundDate(row[dateCol]) || document.getElementById('uploadDate').value, source:file.name}; }).filter(function(r){ return r.tracking; }));
+          resolve(data.map(function(row){ return {tracking:String(row[awbCol]||'').replace(/[^A-Za-z0-9]/g,'').trim(), date:outboundDate(row[dateCol]) || document.getElementById('uploadDate').value, source:file.name, cod:codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : 0, product:productCol ? String(row[productCol]||'').trim() : ''}; }).filter(function(r){ return r.tracking; }));
         }catch(err){ reject(err); }
       };
       reader.readAsArrayBuffer(file);
     });
   })).then(function(groups){
     var current = getOutboundData(), known = {};
-    current.forEach(function(r){ known[r.tracking+'|'+r.date] = true; });
+    current.forEach(function(r, i){ known[r.tracking+'|'+r.date] = i; });
     var added = 0;
-    groups.flat().forEach(function(r){ var key=r.tracking+'|'+r.date; if(!known[key]){ current.push(r); known[key]=true; added++; } });
+    groups.flat().forEach(function(r){ var key=r.tracking+'|'+r.date; if(known[key] === undefined){ current.push(r); known[key]=current.length-1; added++; } else { Object.assign(current[known[key]], r); } });
     saveOutboundData(current); renderOutboundSummary(); showToast('บันทึกทะเบียนส่งออกใหม่ '+added.toLocaleString()+' เลข');
   }).catch(function(err){ showToast(err.message || 'อ่านไฟล์ส่งออกไม่สำเร็จ', true); });
 });
@@ -252,9 +254,10 @@ document.getElementById('fileInput').addEventListener('change', function(e){
       if(!data.length){ showToast('ไฟล์ว่างเปล่า', true); return; }
       var cols = Object.keys(data[0]);
       var trackCol = cols.find(function(c){return c.indexOf('เลขพัสดุ')!==-1;});
-      var prodCol = cols.find(function(c){return c.indexOf('ชื่อสินค้า')!==-1;});
+      var prodCol = cols.find(function(c){return c.indexOf('ชื่อสินค้า')!==-1 || c==='สินค้า' || c.indexOf('สินค้า')!==-1;});
       var orderCol = cols.find(function(c){return c.indexOf('หมายเลขออเดอร์ภายใน')!==-1;});
       var qtyCol = cols.find(function(c){return c==='จำนวน';});
+      var codCol = cols.find(function(c){return /ยอดเงิน\s*cod|ยอด\s*cod|^cod$/i.test(c);});
       if(!trackCol || !prodCol){ showToast('ไม่พบคอลัมน์ "เลขพัสดุ" หรือ "ชื่อสินค้า" ในไฟล์', true); return; }
 
       var date = document.getElementById('uploadDate').value;
@@ -267,6 +270,7 @@ document.getElementById('fileInput').addEventListener('change', function(e){
           product: String(row[prodCol]||'').trim(),
           order: orderCol ? String(row[orderCol]||'').trim() : '',
           qty: qtyCol ? (parseFloat(row[qtyCol])||1) : 1,
+          cod: codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : null,
           date: date
         };
       }).filter(function(r){ return r.tracking && r.product && !existingKeys[r.tracking+'|'+r.product]; });
