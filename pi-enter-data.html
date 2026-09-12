@@ -117,7 +117,8 @@
         <p class="section-label" style="margin:0;">🚚 ทะเบียนพัสดุส่งออกรายวัน</p>
         <a class="btn-ghost" href="pi-tracking.html" style="text-decoration:none; display:inline-flex; align-items:center;">เปิดคิว Tracking →</a>
       </div>
-      <p class="hint">เลือกได้หลายไฟล์ในครั้งเดียวสำหรับรหัสผู้ส่งต่างกัน ระบบจะรวมเลข AWB และบันทึกตามวันที่ส่งจากในไฟล์</p>
+      <p class="hint">เลือกวันที่ส่งออกก่อน แล้วเลือก 2 ไฟล์ของวันเดียวกันได้พร้อมกัน ระบบจะรวมเลข AWB ไว้ในวันนั้น</p>
+      <div class="row2" style="margin:0 0 12px;"><div><label>วันที่ส่งออก (ใช้กับไฟล์ทั้งชุด)</label><input type="date" id="outboundDateInput"></div><div></div></div>
       <label class="file-btn"><i class="ti ti-truck-delivery"></i><span id="outboundFileLabel">เลือกไฟล์ส่งออกจาก JST</span><input type="file" id="outboundFileInput" accept=".csv,.txt,.xlsx,.xls" multiple></label>
       <p class="hint" id="outboundSummary" style="margin:12px 0 0;"></p>
     </div>
@@ -223,7 +224,9 @@ document.getElementById('outboundFileInput').addEventListener('change', function
           var codCol = cols.find(function(c){ return /ยอดเงิน\s*cod|cod amount|^cod$/i.test(c); });
           var productCol = cols.find(function(c){ return /หมายเหตุ|รายละเอียด.*พัสดุ|สินค้า|product/i.test(c); });
           if(!awbCol) return reject(new Error('ไม่พบคอลัมน์ AWB ในไฟล์ '+file.name));
-          resolve(data.map(function(row){ return {tracking:String(row[awbCol]||'').replace(/[^A-Za-z0-9]/g,'').trim(), date:outboundDate(row[dateCol]) || document.getElementById('uploadDate').value, source:file.name, cod:codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : 0, product:productCol ? String(row[productCol]||'').trim() : ''}; }).filter(function(r){ return r.tracking; }));
+          var selectedDate = document.getElementById('outboundDateInput').value;
+          if(!selectedDate) return reject(new Error('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์'));
+          resolve(data.map(function(row){ return {tracking:String(row[awbCol]||'').replace(/[^A-Za-z0-9]/g,'').trim(), date:selectedDate, source:file.name, cod:codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : 0, product:productCol ? String(row[productCol]||'').trim() : ''}; }).filter(function(r){ return r.tracking; }));
         }catch(err){ reject(err); }
       };
       reader.readAsArrayBuffer(file);
@@ -240,6 +243,7 @@ var returnsData = getReturnsData();
 function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} }
 
 document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
+document.getElementById('outboundDateInput').value = new Date().toISOString().slice(0,10);
 
 var pendingUpload = null;
 document.getElementById('fileInput').addEventListener('change', function(e){
