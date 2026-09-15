@@ -68,7 +68,8 @@
   .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
   @media (max-width:640px){ .row2, .row3{grid-template-columns:1fr;} }
 
-  .file-btn{background:var(--surface-kraft); border:1.5px dashed var(--border); border-radius:var(--radius-md); padding:0 16px; font-size:15px; font-weight:500; color:var(--ink-soft); display:flex; align-items:center; gap:8px; cursor:pointer; justify-content:center; height:46px;}
+  .file-btn{background:var(--surface-kraft); border:1.5px dashed var(--border); border-radius:var(--radius-md); padding:0 16px; font-size:15px; font-weight:500; color:var(--ink-soft); display:flex; align-items:center; gap:8px; cursor:pointer; justify-content:center; height:46px; transition:.16s ease;}
+  .file-btn.drop-active{border-color:var(--stamp-red); background:var(--bg-danger); color:var(--stamp-red); transform:translateY(-1px);}
   input[type=file]{display:none;}
 
   .btn-main{background:var(--stamp-red); color:var(--on-stamp); border:none; border-radius:var(--radius-pill); height:48px; padding:0 24px; font-family:var(--font-display); font-size:15.5px; font-weight:600; width:auto; box-shadow:0 4px 14px rgba(201,79,79,0.28);}
@@ -119,7 +120,7 @@
       </div>
       <p class="hint">เลือกวันที่ส่งออกก่อน แล้วเลือก 2 ไฟล์ของวันเดียวกันได้พร้อมกัน ระบบจะรวมเลข AWB ไว้ในวันนั้น</p>
       <div class="row2" style="margin:0 0 12px;"><div><label>วันที่ส่งออก (ใช้กับไฟล์ทั้งชุด)</label><input type="date" id="outboundDateInput"></div><div></div></div>
-      <label class="file-btn"><i class="ti ti-truck-delivery"></i><span id="outboundFileLabel">เลือกไฟล์ส่งออกจาก JST</span><input type="file" id="outboundFileInput" accept=".csv,.txt,.xlsx,.xls" multiple></label>
+      <label class="file-btn" id="outboundDropZone"><i class="ti ti-truck-delivery"></i><span id="outboundFileLabel">เลือกหรือลากไฟล์ส่งออกจาก JST มาวาง</span><input type="file" id="outboundFileInput" accept=".csv,.txt,.xlsx,.xls" multiple></label>
       <p class="hint" id="outboundSummary" style="margin:12px 0 0;"></p>
     </div>
 
@@ -128,7 +129,7 @@
       <p class="hint">รองรับไฟล์ฟอร์แมตเดียวกับที่ดึงจาก JST — เช็คพรีวิวก่อนกดบันทึกจริง กันเลขซ้ำให้อัตโนมัติ</p>
       <div class="row2">
         <div><label>วันที่ตีกลับ (ของไฟล์นี้)</label><input type="date" id="uploadDate"></div>
-        <div><label>&nbsp;</label><label class="file-btn"><i class="ti ti-file-upload"></i><span id="fileLabel">เลือกไฟล์ Excel/CSV จาก JST</span><input type="file" id="fileInput" accept=".csv,.txt,.xlsx,.xls"></label></div>
+        <div><label>&nbsp;</label><label class="file-btn" id="returnDropZone"><i class="ti ti-file-upload"></i><span id="fileLabel">เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง</span><input type="file" id="fileInput" accept=".csv,.txt,.xlsx,.xls"></label></div>
       </div>
       <div id="uploadPreviewBox" style="display:none; margin-top:16px;">
         <p class="section-label" style="font-size:15px;">พรีวิวก่อนบันทึก</p>
@@ -206,8 +207,8 @@ function renderOutboundSummary(){
   var dates = Array.from(new Set(rows.map(function(r){ return r.date; }).filter(Boolean))).sort().reverse();
   document.getElementById('outboundSummary').textContent = rows.length ? 'บันทึกแล้ว '+rows.length.toLocaleString()+' เลข จาก '+dates.length+' วันส่งล่าสุด' : 'ยังไม่มีทะเบียนส่งออก';
 }
-document.getElementById('outboundFileInput').addEventListener('change', function(e){
-  var files = Array.from(e.target.files || []);
+function handleOutboundFiles(files){
+  files = Array.from(files || []);
   if(!files.length) return;
   document.getElementById('outboundFileLabel').textContent = 'เลือกแล้ว '+files.length+' ไฟล์';
   Promise.all(files.map(function(file){
@@ -238,7 +239,8 @@ document.getElementById('outboundFileInput').addEventListener('change', function
     groups.flat().forEach(function(r){ var key=r.tracking+'|'+r.date; if(known[key] === undefined){ current.push(r); known[key]=current.length-1; added++; } else { Object.assign(current[known[key]], r); } });
     saveOutboundData(current); renderOutboundSummary(); showToast('บันทึกทะเบียนส่งออกใหม่ '+added.toLocaleString()+' เลข');
   }).catch(function(err){ showToast(err.message || 'อ่านไฟล์ส่งออกไม่สำเร็จ', true); });
-});
+}
+document.getElementById('outboundFileInput').addEventListener('change', function(e){ handleOutboundFiles(e.target.files); });
 var returnsData = getReturnsData();
 function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} }
 
@@ -246,9 +248,8 @@ document.getElementById('uploadDate').value = new Date().toISOString().slice(0,1
 document.getElementById('outboundDateInput').value = new Date().toISOString().slice(0,10);
 
 var pendingUpload = null;
-document.getElementById('fileInput').addEventListener('change', function(e){
-  var f = e.target.files[0];
-  document.getElementById('fileLabel').textContent = f ? f.name : 'เลือกไฟล์ Excel/CSV จาก JST';
+function handleReturnFile(f){
+  document.getElementById('fileLabel').textContent = f ? f.name : 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
   if(!f) return;
   var reader = new FileReader();
   reader.onload = function(ev){
@@ -300,7 +301,26 @@ document.getElementById('fileInput').addEventListener('change', function(e){
     } catch(err){ showToast('อ่านไฟล์ไม่สำเร็จ', true); }
   };
   reader.readAsArrayBuffer(f);
-});
+}
+document.getElementById('fileInput').addEventListener('change', function(e){ handleReturnFile(e.target.files[0]); });
+
+function enableFileDrop(zoneId, onFiles, multiple){
+  var zone = document.getElementById(zoneId);
+  ['dragenter','dragover'].forEach(function(eventName){
+    zone.addEventListener(eventName, function(e){ e.preventDefault(); e.stopPropagation(); zone.classList.add('drop-active'); });
+  });
+  ['dragleave','drop'].forEach(function(eventName){
+    zone.addEventListener(eventName, function(e){ e.preventDefault(); e.stopPropagation(); zone.classList.remove('drop-active'); });
+  });
+  zone.addEventListener('drop', function(e){
+    var files = Array.from(e.dataTransfer.files || []);
+    if(!files.length) return;
+    if(!multiple && files.length > 1){ showToast('ส่วนนี้เลือกได้ครั้งละ 1 ไฟล์ ระบบจะอ่านไฟล์แรกให้', true); }
+    onFiles(multiple ? files : files[0]);
+  });
+}
+enableFileDrop('outboundDropZone', handleOutboundFiles, true);
+enableFileDrop('returnDropZone', handleReturnFile, false);
 
 document.getElementById('saveUploadBtn').addEventListener('click', function(){
   if(!pendingUpload) return;
@@ -310,14 +330,14 @@ document.getElementById('saveUploadBtn').addEventListener('click', function(){
   pendingUpload = null;
   document.getElementById('uploadPreviewBox').style.display = 'none';
   document.getElementById('fileInput').value = '';
-  document.getElementById('fileLabel').textContent = 'เลือกไฟล์ Excel/CSV จาก JST';
+  document.getElementById('fileLabel').textContent = 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
   renderAll();
 });
 document.getElementById('cancelUploadBtn').addEventListener('click', function(){
   pendingUpload = null;
   document.getElementById('uploadPreviewBox').style.display = 'none';
   document.getElementById('fileInput').value = '';
-  document.getElementById('fileLabel').textContent = 'เลือกไฟล์ Excel/CSV จาก JST';
+  document.getElementById('fileLabel').textContent = 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
 });
 
 function currentMonthKey(){
