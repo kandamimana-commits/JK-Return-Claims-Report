@@ -319,7 +319,7 @@ function renderReturnUploadStatus(){
     button.addEventListener('click',function(){syncReturnsToCloud(false);});
   }
 }
-function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} renderReturnUploadStatus(); }
+function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} renderReturnUploadStatus(); syncReturnsToCloud(true); }
 async function syncReturnsToCloud(silent){
   var client=window.claimsSupabase;
   if(!client){if(!silent) showToast('กรุณาล็อกอินก่อนซิงก์ Cloud',true);return;}
@@ -335,7 +335,7 @@ async function syncReturnsToCloud(silent){
   var result=await client.from('claims_returns').upsert(rows,{onConflict:'tracking,return_date'});
   if(btn){btn.disabled=false;btn.textContent='☁ ซิงก์ข้อมูลตีกลับทั้งหมดขึ้น Cloud';}
   if(result.error){showToast('ซิงก์ตีกลับไม่สำเร็จ: '+result.error.message,true);return;}
-  showToast('ซิงก์ตีกลับขึ้น Cloud สำเร็จ '+rows.length.toLocaleString()+' รายการ');
+  if(!silent) showToast('ซิงก์ตีกลับขึ้น Cloud สำเร็จ '+rows.length.toLocaleString()+' รายการ');
 }
 
 document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
