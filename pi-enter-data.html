@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="claims-auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -187,6 +189,11 @@ if(localStorage.getItem('pi_returns_reset_202609') !== 'done'){
   localStorage.removeItem('pi_returns_data');
   localStorage.setItem('pi_returns_reset_202609', 'done');
 }
+// ล้างอีกครั้งเฉพาะข้อมูลตีกลับที่เคยอ่านคอลัมน์สินค้า (D) ผิดแทนชื่อสินค้า (O)
+if(localStorage.getItem('pi_returns_reset_202609_namefix') !== 'done'){
+  localStorage.removeItem('pi_returns_data');
+  localStorage.setItem('pi_returns_reset_202609_namefix', 'done');
+}
 function showToast(msg, warn){
   var t = document.createElement('div');
   t.textContent = msg;
@@ -308,11 +315,12 @@ function handleReturnFile(f){
       if(!data.length){ showToast('ไฟล์ว่างเปล่า', true); return; }
       var cols = Object.keys(data[0]);
       var trackCol = cols.find(function(c){return c.indexOf('เลขพัสดุ')!==-1;});
-      var prodCol = cols.find(function(c){return c.indexOf('ชื่อสินค้า')!==-1 || c==='สินค้า' || c.indexOf('สินค้า')!==-1;});
+      // ใช้คอลัมน์ O “ชื่อสินค้า” เท่านั้น: คอลัมน์ “สินค้า” เป็นรหัส/รายละเอียดรวม ไม่ใช่ชื่อสินค้า
+      var prodCol = cols.find(function(c){return String(c).replace(/\s+/g,'').trim()==='ชื่อสินค้า';});
       var orderCol = cols.find(function(c){return c.indexOf('หมายเลขออเดอร์ภายใน')!==-1;});
       var qtyCol = cols.find(function(c){return c==='จำนวน';});
       var codCol = cols.find(function(c){return /ยอดเงิน\s*cod|ยอด\s*cod|^cod$/i.test(c);});
-      var skuCol = cols.find(function(c){return /รหัส\s*สินค้า|sku|product\s*code/i.test(c);});
+      var skuCol = cols.find(function(c){return String(c).replace(/\s+/g,'').trim()==='รหัสสินค้า';}) || cols.find(function(c){return /sku|product\s*code/i.test(c);});
       if(!trackCol || !prodCol){ showToast('ไม่พบคอลัมน์ "เลขพัสดุ" หรือ "ชื่อสินค้า" ในไฟล์', true); return; }
 
       var date = document.getElementById('uploadDate').value;

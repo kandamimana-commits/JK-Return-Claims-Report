@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="claims-auth.js"></script>
 <style>
   :root{
     --bg:#FBF2E2; --surface:#FFFFFF; --surface-kraft:#F3E4C8;
@@ -218,6 +220,10 @@
   if(localStorage.getItem('pi_returns_reset_202609') !== 'done'){
     localStorage.removeItem('pi_returns_data');
     localStorage.setItem('pi_returns_reset_202609', 'done');
+  }
+  if(localStorage.getItem('pi_returns_reset_202609_namefix') !== 'done'){
+    localStorage.removeItem('pi_returns_data');
+    localStorage.setItem('pi_returns_reset_202609_namefix', 'done');
   }
   function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
   function norm(v){return String(v||'').replace(/[^A-Za-z0-9]/g,'')}
