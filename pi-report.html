@@ -122,8 +122,6 @@
     <p class="pagetitle">Report</p>
     <p class="pagesub">ภาพรวมพัสดุตีกลับและงานเคลม</p>
 
-    <span class="mock-tag">🧪 ข้อมูลสมมติสำหรับดูตัวอย่างดีไซน์ — รอต่อข้อมูลจริงทีหลัง</span>
-
     <div class="section-divider">
       <div class="icon-badge">📦</div>
       <h2>พัสดุตีกลับ</h2>
@@ -137,7 +135,7 @@
           <div class="pie-chart" id="returnPie" style="background:conic-gradient(from 0deg, #C94F4F 0% 8%, #E8D9C4 8% 100%);"></div>
           <div class="pie-legend">
             <div class="legend-row"><div class="legend-dot" style="background:#C94F4F;"></div><span class="legend-name">ตีกลับ</span><span class="legend-pct" id="returnPct">0%</span></div>
-            <div class="legend-row"><div class="legend-dot" style="background:#E8D9C4;"></div><span class="legend-name">ส่งสำเร็จ</span><span class="legend-pct" id="successPct">0%</span></div>
+            <div class="legend-row"><div class="legend-dot" style="background:#E8D9C4;"></div><span class="legend-name">ส่งออก</span><span class="legend-pct" id="successPct">0%</span></div>
           </div>
         </div>
       </div>
@@ -170,6 +168,10 @@
           <tr><td><span class="rank-num">10</span></td><td>สับกระเทียม</td><td style="text-align:right;">10</td></tr>
         </tbody>
       </table>
+      <div class="pie-wrap" style="margin-top:22px;">
+        <div class="pie-chart" id="productSharePie" style="background:conic-gradient(#E8D9C4 0 100%);"></div>
+        <div class="pie-legend" id="productShareLegend"><p class="hint">กำลังอ่านสัดส่วนสินค้า…</p></div>
+      </div>
     </div>
 
     <a class="detail-link" href="pi-returns.html">ดูรายละเอียดเพิ่มเติมทั้งหมด <i class="ti ti-arrow-right"></i></a>
@@ -257,6 +259,11 @@
     basis.textContent='ตีกลับ '+returned.toLocaleString()+' ออเดอร์ จากส่งออก '+sent.toLocaleString()+' เลข';
     var top=Array.isArray(data.top_returns)?data.top_returns:[];
     document.getElementById('topReturns').innerHTML=top.map(function(p,i){return '<tr><td><span class="rank-num">'+(i+1)+'</span></td><td>'+esc(p.product_name||'-')+'</td><td>'+esc(p.sku||'-')+'</td><td style="text-align:right;">'+Number(p.quantity||0)+'</td></tr>';}).join('')||'<tr><td colspan="4" style="text-align:center;">ยังไม่มีข้อมูลตีกลับ</td></tr>';
+    var totalItems=Number(data.return_items||0), colors=['#C94F4F','#D98B5C','#D9B84E','#7EAE87','#5C9FC2','#9270B3','#D1789A','#879D55','#A77D5D','#6E8FA3'], start=0, parts=[], legend=[];
+    top.forEach(function(p,i){var share=totalItems?Number(p.quantity||0)/totalItems*100:0,end=start+share;parts.push(colors[i]+' '+start+'% '+end+'%');legend.push('<div class="legend-row"><div class="legend-dot" style="background:'+colors[i]+';"></div><span class="legend-name">'+esc(p.product_name||'-')+'</span><span class="legend-pct">'+(Math.round(share*10)/10).toFixed(1)+'%</span></div>');start=end;});
+    if(start<100){parts.push('#E8D9C4 '+start+'% 100%');legend.push('<div class="legend-row"><div class="legend-dot" style="background:#E8D9C4;"></div><span class="legend-name">สินค้าอื่น ๆ</span><span class="legend-pct">'+(Math.round((100-start)*10)/10).toFixed(1)+'%</span></div>');}
+    document.getElementById('productSharePie').style.background='conic-gradient('+parts.join(',')+')';
+    document.getElementById('productShareLegend').innerHTML='<p class="hint" style="margin-bottom:7px;">สัดส่วนจำนวนชิ้นตีกลับทั้งหมด '+totalItems.toLocaleString()+' ชิ้น</p>'+legend.join('');
   }
   async function loadCloudReport(){
     var note=document.getElementById('cloudReportNote');
