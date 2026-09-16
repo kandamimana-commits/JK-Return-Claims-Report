@@ -319,6 +319,15 @@ function renderReturnUploadStatus(){
     button.addEventListener('click',function(){syncReturnsToCloud(false);});
   }
 }
+async function renderReturnCloudStatus(){
+  var client=window.claimsSupabase, el=document.getElementById('returnUploadStatus');
+  if(!client||!el) return;
+  var latest=await client.from('claims_returns').select('return_date').order('return_date',{ascending:false}).limit(1);
+  if(latest.error||!latest.data||!latest.data.length) return;
+  var date=latest.data[0].return_date;
+  var count=await client.from('claims_returns').select('*',{count:'exact',head:true}).eq('return_date',date);
+  el.textContent='☁ ข้อมูลตีกลับบน Cloud ล่าสุดถึงวันที่ '+date+' · '+Number(count.count||0).toLocaleString()+' รายการในวันนั้น';
+}
 function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} renderReturnUploadStatus(); syncReturnsToCloud(true); }
 async function syncReturnsToCloud(silent){
   var client=window.claimsSupabase;
@@ -335,12 +344,14 @@ async function syncReturnsToCloud(silent){
   var result=await client.from('claims_returns').upsert(rows,{onConflict:'tracking,return_date'});
   if(btn){btn.disabled=false;btn.textContent='☁ ซิงก์ข้อมูลตีกลับทั้งหมดขึ้น Cloud';}
   if(result.error){showToast('ซิงก์ตีกลับไม่สำเร็จ: '+result.error.message,true);return;}
+  renderReturnCloudStatus();
   if(!silent) showToast('ซิงก์ตีกลับขึ้น Cloud สำเร็จ '+rows.length.toLocaleString()+' รายการ');
 }
 
 document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
 document.getElementById('outboundDateInput').value = new Date().toISOString().slice(0,10);
 renderReturnUploadStatus();
+window.addEventListener('claims-auth-ready',function(e){if(e.detail&&e.detail.admin) renderReturnCloudStatus();});
 
 var pendingUpload = null;
 function handleReturnFile(f){
@@ -390,12 +401,21 @@ function handleReturnFile(f){
         return {product:p, qty:byProduct[p].qty, orders:Object.keys(byProduct[p].orders).length};
       });
 
-      pendingUpload = rows;
-      document.getElementById('uploadPreviewSummary').textContent = 'พบ ' + rows.length + ' รายการใหม่ (' + summaryRows.length + ' สินค้า)';
+      // บันทึกทันทีหลังอ่านไฟล์สำเร็จ: ไม่ให้ข้อมูลที่เลือกหายหากเผลอรีเฟรชหน้า
+      returnsData = returnsData.concat(rows);
+      saveData();
+      pendingUpload = null;
+      document.getElementById('uploadPreviewSummary').textContent = 'บันทึกแล้ว ' + rows.length + ' รายการใหม่ (' + summaryRows.length + ' สินค้า) และกำลังส่งขึ้น Cloud';
       document.getElementById('uploadPreviewBody').innerHTML = summaryRows.map(function(s){
         return '<tr><td>'+s.product+'</td><td>'+s.qty+'</td><td>'+s.orders+'</td></tr>';
       }).join('');
       document.getElementById('uploadPreviewBox').style.display = 'block';
+      document.getElementById('saveUploadBtn').style.display = 'none';
+      document.getElementById('cancelUploadBtn').textContent = 'ปิด';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('fileLabel').textContent = 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
+      renderAll();
+      showToast('บันทึกตีกลับแล้ว '+rows.length+' รายการ');
     } catch(err){ showToast('อ่านไฟล์ไม่สำเร็จ', true); }
   };
   reader.readAsArrayBuffer(f);
