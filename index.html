@@ -154,7 +154,7 @@
       <p class="section-label">🏆 สินค้าที่ตีกลับมากที่สุด (10 อันดับแรก)</p>
       <p class="hint">เดือนนี้</p>
       <table>
-        <thead><tr><th></th><th>ชื่อสินค้า</th><th style="text-align:right;">จำนวนชิ้น</th></tr></thead>
+        <thead><tr><th></th><th>ชื่อสินค้า</th><th>รหัสสินค้า</th><th style="text-align:right;">จำนวนชิ้น</th></tr></thead>
         <tbody id="topReturns">
           <tr><td><span class="rank-num">1</span></td><td>แลกซื้อ-ผ้า</td><td style="text-align:right;">90</td></tr>
           <tr><td><span class="rank-num">2</span></td><td>กาวซ่อมรองเท้า</td><td style="text-align:right;">33</td></tr>
@@ -215,18 +215,23 @@
 
 <script>
 (function(){
+  if(localStorage.getItem('pi_returns_reset_202609') !== 'done'){
+    localStorage.removeItem('pi_returns_data');
+    localStorage.setItem('pi_returns_reset_202609', 'done');
+  }
   function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
   function norm(v){return String(v||'').replace(/[^A-Za-z0-9]/g,'')}
   function money(v){return '฿'+Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
-  var outbound=load('pi_outbound_batches'), results=load('pi_tracking_results'), returns=load('pi_returns_data'), claims=load('pi_claims_history');
-  var outMap={}; outbound.forEach(function(x){outMap[norm(x.tracking)]=x});
-  var returned={}, returnCod={}; results.forEach(function(x){if(/ตีกลับ|return|\brto\b/i.test(String(x.status||''))) returned[norm(x.tracking)]=true});
-  returns.forEach(function(x){var id=norm(x.tracking); returned[id]=true; if(x.cod!==null && x.cod!==undefined && x.cod!=='') returnCod[id]=Number(x.cod||0)});
-  var ids=Object.keys(returned), cod=ids.reduce(function(sum,id){return sum+(returnCod[id]===undefined ? Number((outMap[id]||{}).cod||0) : returnCod[id])},0);
+  var REPORT_START='2026-09-01';
+  var outbound=load('pi_outbound_batches').filter(function(x){return (x.date||'')>=REPORT_START}), returns=load('pi_returns_data').filter(function(x){return (x.date||'')>=REPORT_START}), claims=load('pi_claims_history');
+  var orders={}; returns.forEach(function(x){var key=norm(x.order)||norm(x.tracking); if(key && !orders[key]) orders[key]=x;});
+  var ids=Object.keys(orders), cod=ids.reduce(function(sum,id){return sum+Number(orders[id].cod||0)},0);
   document.getElementById('returnCod').textContent=money(cod); document.getElementById('returnCount').textContent=ids.length;
   var sent=outbound.length, rp=sent?Math.round(ids.length/sent*100):0; document.getElementById('returnPct').textContent=rp+'%'; document.getElementById('successPct').textContent=(100-rp)+'%';
-  var product={}; returns.forEach(function(x){product[x.product]=(product[x.product]||0)+Number(x.qty||1)});
-  document.getElementById('topReturns').innerHTML=Object.keys(product).sort(function(a,b){return product[b]-product[a]}).slice(0,10).map(function(p,i){return '<tr><td><span class="rank-num">'+(i+1)+'</span></td><td>'+p+'</td><td style="text-align:right;">'+product[p]+'</td></tr>'}).join('')||'<tr><td colspan="3" style="text-align:center;">ยังไม่มีข้อมูลตีกลับ</td></tr>';
+  function cleanSku(value){return String(value||'').replace(/เทเล\s*-/gi,'').replace(/อัพ/gi,'').replace(/\s+/g,' ').trim();}
+  function esc(value){return String(value||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+  var product={}; returns.forEach(function(x){var sku=cleanSku(x.sku), key=sku ? 'sku:'+sku : 'name:'+String(x.product||'').trim(); if(!product[key]) product[key]={name:x.product||'-',sku:sku||'-',qty:0}; product[key].qty+=Number(x.qty||1);});
+  document.getElementById('topReturns').innerHTML=Object.keys(product).map(function(key){return product[key]}).sort(function(a,b){return b.qty-a.qty}).slice(0,10).map(function(p,i){return '<tr><td><span class="rank-num">'+(i+1)+'</span></td><td>'+esc(p.name)+'</td><td>'+esc(p.sku)+'</td><td style="text-align:right;">'+p.qty+'</td></tr>'}).join('')||'<tr><td colspan="4" style="text-align:center;">ยังไม่มีข้อมูลตีกลับ</td></tr>';
   var pending=claims.filter(function(x){return x.status==='pending'}), paid=claims.filter(function(x){return x.status==='transferred'}), rejected=claims.filter(function(x){return x.status==='rejected'}), total=claims.length;
   function sum(rows,key){return rows.reduce(function(s,x){return s+Number(x[key]||0)},0)}
   document.getElementById('claimTotal').textContent=total; document.getElementById('claimPending').textContent=pending.length; document.getElementById('claimPaid').textContent=paid.length; document.getElementById('claimRejected').textContent=rejected.length;

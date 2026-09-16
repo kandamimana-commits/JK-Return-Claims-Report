@@ -182,6 +182,11 @@
 </div>
 
 <script>
+// เริ่มใช้งานจริง 1 ก.ย. 2569: ล้างเฉพาะข้อมูลตีกลับที่เคยใช้ทดสอบ 1 ครั้ง
+if(localStorage.getItem('pi_returns_reset_202609') !== 'done'){
+  localStorage.removeItem('pi_returns_data');
+  localStorage.setItem('pi_returns_reset_202609', 'done');
+}
 function showToast(msg, warn){
   var t = document.createElement('div');
   t.textContent = msg;
@@ -213,12 +218,16 @@ function renderOutboundSummary(){
   document.getElementById('outboundSummary').textContent = rows.length ? 'บันทึกแล้ว '+rows.length.toLocaleString()+' เลข จาก '+dates.length+' วันส่งล่าสุด' : 'ยังไม่มีทะเบียนส่งออก';
   var groups = {};
   rows.forEach(function(row){
-    var source = row.source || 'ไฟล์ที่เคยบันทึกไว้';
-    var key = row.date + '|' + source;
-    if(!groups[key]) groups[key] = {date:row.date, source:source, count:0};
+    var key = row.batchId || ('legacy-' + row.date);
+    if(!groups[key]) groups[key] = {key:key, date:row.date, sources:{}, count:0, legacy:!row.batchId};
+    groups[key].sources[row.source || 'ไฟล์ที่เคยบันทึกไว้'] = true;
     groups[key].count++;
   });
-  outboundBatchGroups = Object.keys(groups).map(function(key){ return groups[key]; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  outboundBatchGroups = Object.keys(groups).map(function(key){
+    var group = groups[key];
+    group.sourceLabel = Object.keys(group.sources).join(' + ');
+    return group;
+  }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var box = document.getElementById('outboundDateFixBox');
   var select = document.getElementById('outboundBatchSelect');
   box.style.display = outboundBatchGroups.length ? 'grid' : 'none';
@@ -226,13 +235,16 @@ function renderOutboundSummary(){
   outboundBatchGroups.forEach(function(batch, index){
     var option = document.createElement('option');
     option.value = String(index);
-    option.textContent = (batch.date || '-') + ' · ' + batch.source + ' (' + batch.count.toLocaleString() + ' เลข)';
+    option.textContent = (batch.date || '-') + ' · ' + batch.sourceLabel + ' (' + batch.count.toLocaleString() + ' เลข)';
     select.appendChild(option);
   });
 }
 function handleOutboundFiles(files){
   files = Array.from(files || []);
   if(!files.length) return;
+  var selectedDate = document.getElementById('outboundDateInput').value;
+  if(!selectedDate){ showToast('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์', true); return; }
+  var batchId = 'outbound-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
   document.getElementById('outboundFileLabel').textContent = 'เลือกแล้ว '+files.length+' ไฟล์';
   Promise.all(files.map(function(file){
     return new Promise(function(resolve, reject){
@@ -248,9 +260,7 @@ function handleOutboundFiles(files){
           var codCol = cols.find(function(c){ return /ยอดเงิน\s*cod|cod amount|^cod$/i.test(c); });
           var productCol = cols.find(function(c){ return /หมายเหตุ|รายละเอียด.*พัสดุ|สินค้า|product/i.test(c); });
           if(!awbCol) return reject(new Error('ไม่พบคอลัมน์ AWB ในไฟล์ '+file.name));
-          var selectedDate = document.getElementById('outboundDateInput').value;
-          if(!selectedDate) return reject(new Error('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์'));
-          resolve(data.map(function(row){ return {tracking:String(row[awbCol]||'').replace(/[^A-Za-z0-9]/g,'').trim(), date:selectedDate, source:file.name, cod:codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : 0, product:productCol ? String(row[productCol]||'').trim() : ''}; }).filter(function(r){ return r.tracking; }));
+          resolve(data.map(function(row){ return {tracking:String(row[awbCol]||'').replace(/[^A-Za-z0-9]/g,'').trim(), date:selectedDate, source:file.name, batchId:batchId, cod:codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : 0, product:productCol ? String(row[productCol]||'').trim() : ''}; }).filter(function(r){ return r.tracking; }));
         }catch(err){ reject(err); }
       };
       reader.readAsArrayBuffer(file);
@@ -270,14 +280,15 @@ document.getElementById('fixOutboundDateBtn').addEventListener('click', function
   var newDate = document.getElementById('outboundFixDate').value;
   if(!batch || !newDate){ showToast('เลือกไฟล์และวันที่ใหม่ก่อน', true); return; }
   if(batch.date === newDate){ showToast('วันที่เดิมตรงกับวันที่ที่เลือกแล้ว', true); return; }
-  if(!confirm('ย้าย '+batch.count.toLocaleString()+' เลข จากไฟล์ '+batch.source+'\n'+batch.date+' → '+newDate+' ใช่ไหม?')) return;
+  if(!confirm('ย้าย '+batch.count.toLocaleString()+' เลข จากชุดไฟล์ '+batch.sourceLabel+'\n'+batch.date+' → '+newDate+' ใช่ไหม?')) return;
   var rows = getOutboundData();
   rows.forEach(function(row){
-    if(row.date === batch.date && (row.source || 'ไฟล์ที่เคยบันทึกไว้') === batch.source) row.date = newDate;
+    var belongsToBatch = batch.legacy ? row.date === batch.date : row.batchId === batch.key;
+    if(belongsToBatch) row.date = newDate;
   });
   saveOutboundData(rows);
   renderOutboundSummary();
-  showToast('ย้ายวันที่ของไฟล์ '+batch.source+' แล้ว');
+  showToast('ย้ายวันที่ของชุดไฟล์ '+batch.sourceLabel+' แล้ว');
 });
 var returnsData = getReturnsData();
 function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} }
@@ -301,6 +312,7 @@ function handleReturnFile(f){
       var orderCol = cols.find(function(c){return c.indexOf('หมายเลขออเดอร์ภายใน')!==-1;});
       var qtyCol = cols.find(function(c){return c==='จำนวน';});
       var codCol = cols.find(function(c){return /ยอดเงิน\s*cod|ยอด\s*cod|^cod$/i.test(c);});
+      var skuCol = cols.find(function(c){return /รหัส\s*สินค้า|sku|product\s*code/i.test(c);});
       if(!trackCol || !prodCol){ showToast('ไม่พบคอลัมน์ "เลขพัสดุ" หรือ "ชื่อสินค้า" ในไฟล์', true); return; }
 
       var date = document.getElementById('uploadDate').value;
@@ -311,6 +323,7 @@ function handleReturnFile(f){
         return {
           tracking: String(row[trackCol]||'').trim(),
           product: String(row[prodCol]||'').trim(),
+          sku: skuCol ? String(row[skuCol]||'').trim() : '',
           order: orderCol ? String(row[orderCol]||'').trim() : '',
           qty: qtyCol ? (parseFloat(row[qtyCol])||1) : 1,
           cod: codCol ? (parseFloat(String(row[codCol]||'').replace(/[^0-9.-]/g,''))||0) : null,
