@@ -245,12 +245,16 @@
   var cp=total?Math.round(paid.length/total*100):0; document.getElementById('claimSuccessPct').textContent=cp+'%'; document.getElementById('claimRejectPct').textContent=(total?Math.round(rejected.length/total*100):0)+'%'; document.getElementById('claimPie').style.background='conic-gradient(from 0deg, #5FA980 0% '+cp+'%, #C94F4F '+cp+'% 100%)';
   function applyCloudReport(data){
     if(!data) return;
-    var sent=Number(data.sent||0), returned=Number(data.returned||0), pct=sent?Math.round(returned/sent*100):0;
+    var sent=Number(data.sent||0), returned=Number(data.returned||0), pct=sent?(returned/sent*100):0;
+    var pctText=(Math.round(pct*10)/10).toLocaleString('th-TH',{minimumFractionDigits:1,maximumFractionDigits:1});
     document.getElementById('returnCount').textContent=returned;
     document.getElementById('returnCod').textContent=money(data.cod||0);
-    document.getElementById('returnPct').textContent=pct+'%';
-    document.getElementById('successPct').textContent=(100-pct)+'%';
+    document.getElementById('returnPct').textContent=pctText+'%';
+    document.getElementById('successPct').textContent=(Math.round((100-pct)*10)/10).toLocaleString('th-TH',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
     document.getElementById('returnPie').style.background='conic-gradient(from 0deg, #C94F4F 0% '+pct+'%, #E8D9C4 '+pct+'% 100%)';
+    var basis=document.getElementById('returnBasis');
+    if(!basis){basis=document.createElement('p');basis.id='returnBasis';basis.style.cssText='margin:10px 0 0;font-size:13px;color:var(--ink-soft);';document.getElementById('returnPie').parentElement.querySelector('.pie-legend').appendChild(basis);}
+    basis.textContent='ตีกลับ '+returned.toLocaleString()+' ออเดอร์ จากส่งออก '+sent.toLocaleString()+' เลข';
     var top=Array.isArray(data.top_returns)?data.top_returns:[];
     document.getElementById('topReturns').innerHTML=top.map(function(p,i){return '<tr><td><span class="rank-num">'+(i+1)+'</span></td><td>'+esc(p.product_name||'-')+'</td><td>'+esc(p.sku||'-')+'</td><td style="text-align:right;">'+Number(p.quantity||0)+'</td></tr>';}).join('')||'<tr><td colspan="4" style="text-align:center;">ยังไม่มีข้อมูลตีกลับ</td></tr>';
   }

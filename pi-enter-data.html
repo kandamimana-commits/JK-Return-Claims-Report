@@ -299,10 +299,48 @@ document.getElementById('fixOutboundDateBtn').addEventListener('click', function
   showToast('ย้ายวันที่ของชุดไฟล์ '+batch.sourceLabel+' แล้ว');
 });
 var returnsData = getReturnsData();
-function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} }
+function renderReturnUploadStatus(){
+  var el=document.getElementById('returnUploadStatus');
+  if(!el){
+    el=document.createElement('div'); el.id='returnUploadStatus';
+    el.style.cssText='margin-top:12px;padding:10px 13px;border-radius:12px;background:var(--stamp-green-soft);color:var(--stamp-green-deep);font-size:13.5px;font-weight:600;';
+    var anchor=document.getElementById('fileLabel');
+    if(anchor&&anchor.parentElement) anchor.parentElement.after(el);
+  }
+  var dates=Array.from(new Set(returnsData.map(function(x){return x.date;}).filter(Boolean))).sort();
+  if(!dates.length){el.textContent='ยังไม่เคยอัปโหลดข้อมูลตีกลับ';return;}
+  var last=dates[dates.length-1], count=returnsData.filter(function(x){return x.date===last;}).length;
+  el.textContent='✓ อัปโหลดข้อมูลตีกลับล่าสุดถึงวันที่ '+last+' · '+count.toLocaleString()+' รายการในวันนั้น';
+  var button=document.getElementById('syncReturnsCloudBtn');
+  if(!button){
+    button=document.createElement('button'); button.id='syncReturnsCloudBtn'; button.type='button';
+    button.style.cssText='margin-top:9px;border:1px solid var(--stamp-green);border-radius:999px;padding:8px 13px;background:transparent;color:var(--stamp-green-deep);font:600 13px var(--font-body);';
+    button.textContent='☁ ซิงก์ข้อมูลตีกลับทั้งหมดขึ้น Cloud'; el.after(button);
+    button.addEventListener('click',function(){syncReturnsToCloud(false);});
+  }
+}
+function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} renderReturnUploadStatus(); }
+async function syncReturnsToCloud(silent){
+  var client=window.claimsSupabase;
+  if(!client){if(!silent) showToast('กรุณาล็อกอินก่อนซิงก์ Cloud',true);return;}
+  var unique={};
+  returnsData.forEach(function(x){
+    var tracking=String(x.tracking||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase(), date=String(x.date||'').trim().slice(0,10);
+    if(!tracking||!date) return;
+    unique[tracking+'|'+date]={tracking:tracking,return_date:date,order_no:x.order||null,product_name:x.product||null,sku:x.sku||null,quantity:Number(x.qty||1),cod_amount:Number(x.cod||0),source_file:x.source||null};
+  });
+  var rows=Object.keys(unique).map(function(key){return unique[key]}), btn=document.getElementById('syncReturnsCloudBtn');
+  if(!rows.length){if(!silent)showToast('ยังไม่มีข้อมูลตีกลับให้ซิงก์',true);return;}
+  if(btn){btn.disabled=true;btn.textContent='กำลังซิงก์ '+rows.length.toLocaleString()+' รายการ…';}
+  var result=await client.from('claims_returns').upsert(rows,{onConflict:'tracking,return_date'});
+  if(btn){btn.disabled=false;btn.textContent='☁ ซิงก์ข้อมูลตีกลับทั้งหมดขึ้น Cloud';}
+  if(result.error){showToast('ซิงก์ตีกลับไม่สำเร็จ: '+result.error.message,true);return;}
+  showToast('ซิงก์ตีกลับขึ้น Cloud สำเร็จ '+rows.length.toLocaleString()+' รายการ');
+}
 
 document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
 document.getElementById('outboundDateInput').value = new Date().toISOString().slice(0,10);
+renderReturnUploadStatus();
 
 var pendingUpload = null;
 function handleReturnFile(f){
