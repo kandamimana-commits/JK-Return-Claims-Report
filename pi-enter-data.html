@@ -303,21 +303,15 @@ function renderReturnUploadStatus(){
   var el=document.getElementById('returnUploadStatus');
   if(!el){
     el=document.createElement('div'); el.id='returnUploadStatus';
-    el.style.cssText='margin-top:12px;padding:10px 13px;border-radius:12px;background:var(--stamp-green-soft);color:var(--stamp-green-deep);font-size:13.5px;font-weight:600;';
+    el.style.cssText='margin-top:12px;padding:14px 16px;border-radius:14px;background:var(--surface-kraft);border:1px solid var(--border);color:var(--ink);font-size:14px;';
     var anchor=document.getElementById('fileLabel');
     if(anchor&&anchor.parentElement) anchor.parentElement.after(el);
   }
   var dates=Array.from(new Set(returnsData.map(function(x){return x.date;}).filter(Boolean))).sort();
-  if(!dates.length){el.textContent='ยังไม่เคยอัปโหลดข้อมูลตีกลับ';return;}
+  if(!dates.length){el.innerHTML='<span style="color:var(--ink-soft);">📥 อัปโหลดไฟล์ตีกลับล่าสุด</span><strong style="display:block;margin-top:3px;">ยังไม่มีข้อมูล</strong>';return;}
   var last=dates[dates.length-1], count=returnsData.filter(function(x){return x.date===last;}).length;
-  el.textContent='✓ อัปโหลดข้อมูลตีกลับล่าสุดถึงวันที่ '+last+' · '+count.toLocaleString()+' รายการในวันนั้น';
-  var button=document.getElementById('syncReturnsCloudBtn');
-  if(!button){
-    button=document.createElement('button'); button.id='syncReturnsCloudBtn'; button.type='button';
-    button.style.cssText='margin-top:9px;border:1px solid var(--stamp-green);border-radius:999px;padding:8px 13px;background:transparent;color:var(--stamp-green-deep);font:600 13px var(--font-body);';
-    button.textContent='☁ ซิงก์ข้อมูลตีกลับทั้งหมดขึ้น Cloud'; el.after(button);
-    button.addEventListener('click',function(){syncReturnsToCloud(false);});
-  }
+  el.innerHTML='<span style="color:var(--ink-soft);">📥 อัปโหลดไฟล์ตีกลับล่าสุด</span><strong style="display:block;margin-top:3px;font-size:17px;">'+last+'</strong><span style="color:var(--ink-soft);font-size:13px;">'+count.toLocaleString()+' รายการในวันนั้น</span>';
+  var button=document.getElementById('syncReturnsCloudBtn'); if(button) button.remove();
 }
 async function renderReturnCloudStatus(){
   var client=window.claimsSupabase, el=document.getElementById('returnUploadStatus');
@@ -326,7 +320,7 @@ async function renderReturnCloudStatus(){
   if(latest.error||!latest.data||!latest.data.length) return;
   var date=latest.data[0].return_date;
   var count=await client.from('claims_returns').select('*',{count:'exact',head:true}).eq('return_date',date);
-  el.textContent='☁ ข้อมูลตีกลับบน Cloud ล่าสุดถึงวันที่ '+date+' · '+Number(count.count||0).toLocaleString()+' รายการในวันนั้น';
+  el.innerHTML='<span style="color:var(--ink-soft);">📥 อัปโหลดไฟล์ตีกลับล่าสุด</span><strong style="display:block;margin-top:3px;font-size:17px;">'+date+'</strong><span style="color:var(--ink-soft);font-size:13px;">'+Number(count.count||0).toLocaleString()+' รายการในวันนั้น</span>';
 }
 function saveData(){ try{ localStorage.setItem('pi_returns_data', JSON.stringify(returnsData)); } catch(e){} renderReturnUploadStatus(); syncReturnsToCloud(true); }
 async function syncReturnsToCloud(silent){
