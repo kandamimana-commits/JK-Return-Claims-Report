@@ -255,9 +255,13 @@
     document.getElementById('topReturns').innerHTML=top.map(function(p,i){return '<tr><td><span class="rank-num">'+(i+1)+'</span></td><td>'+esc(p.product_name||'-')+'</td><td>'+esc(p.sku||'-')+'</td><td style="text-align:right;">'+Number(p.quantity||0)+'</td></tr>';}).join('')||'<tr><td colspan="4" style="text-align:center;">ยังไม่มีข้อมูลตีกลับ</td></tr>';
   }
   async function loadCloudReport(){
-    if(!window.claimsSupabase) return;
+    var note=document.getElementById('cloudReportNote');
+    if(!note){note=document.createElement('p');note.id='cloudReportNote';note.style.cssText='margin:0 0 14px;font-size:13px;color:var(--ink-soft);';document.querySelector('.pagesub').after(note);}
+    if(!window.claimsSupabase){note.textContent='ยังเชื่อมต่อ Supabase ไม่ได้';return;}
     var res=await window.claimsSupabase.rpc('claims_public_report');
-    if(!res.error) applyCloudReport(res.data);
+    if(res.error){note.textContent='ดึงรายงานจาก Supabase ไม่สำเร็จ: '+res.error.message;note.style.color='var(--stamp-red-deep)';return;}
+    applyCloudReport(res.data);
+    note.textContent=Number(res.data.sent||0)||Number(res.data.returned||0)?'ข้อมูลรายงานจาก Supabase อัปเดตแล้ว':'Supabase ยังไม่มีข้อมูลส่งออกหรือข้อมูลตีกลับ — เปิด Enter data หลังล็อกอินเพื่อซิงก์ข้อมูลขึ้นฐานก่อน';
   }
   window.addEventListener('claims-auth-ready', loadCloudReport);
 })();
