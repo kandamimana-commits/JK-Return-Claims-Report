@@ -125,6 +125,7 @@
       <div class="row2" style="margin:0 0 12px;"><div><label>วันที่ส่งออก (ใช้กับไฟล์ทั้งชุด)</label><input type="date" id="outboundDateInput"></div><div></div></div>
       <label class="file-btn" id="outboundDropZone"><i class="ti ti-truck-delivery"></i><span id="outboundFileLabel">เลือกหรือลากไฟล์ส่งออกจาก JST มาวาง</span><input type="file" id="outboundFileInput" accept=".csv,.txt,.xlsx,.xls" multiple></label>
       <p class="hint" id="outboundSummary" style="margin:12px 0 0;"></p>
+      <div id="outboundCloudStatus" style="display:none;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--surface-kraft);border:1px solid var(--border);font-size:14px;"></div>
       <div class="row2" id="outboundDateFixBox" style="margin-top:12px; display:none;">
         <div><label>แก้วันที่ของไฟล์ที่ลงแล้ว</label><select id="outboundBatchSelect"></select></div>
         <div><label>เปลี่ยนเป็นวันที่</label><div style="display:flex; gap:8px;"><input type="date" id="outboundFixDate" style="min-width:0;"><button class="btn-ghost" type="button" id="fixOutboundDateBtn">ย้ายวันที่</button></div></div>
@@ -210,6 +211,16 @@ function getOutboundData(){
   try{ return JSON.parse(localStorage.getItem('pi_outbound_batches') || '[]'); } catch(e){ return []; }
 }
 function saveOutboundData(rows){ try{ localStorage.setItem('pi_outbound_batches', JSON.stringify(rows)); } catch(e){} }
+async function renderOutboundCloudStatus(){
+  var el=document.getElementById('outboundCloudStatus'), client=window.claimsSupabase;
+  if(!el || !client) return;
+  var latest=await client.from('claims_outbound').select('ship_date').order('ship_date',{ascending:false}).limit(1);
+  var total=await client.from('claims_outbound').select('*',{count:'exact',head:true});
+  if(latest.error || total.error || !latest.data || !latest.data.length) return;
+  var date=latest.data[0].ship_date;
+  el.style.display='block';
+  el.innerHTML='<strong>☁ ทะเบียนส่งออกบน Cloud</strong><br>บันทึกถึงวันที่ <b>'+date+'</b> · รวม '+Number(total.count||0).toLocaleString()+' เลข<br><span class="hint">ส่วนนี้อ่านจาก Cloud โดยตรง จึงเป็นสถานะจริงหลังรีเฟรช</span>';
+}
 function outboundDate(value){
   var text = String(value || '').trim();
   var iso = text.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
@@ -345,7 +356,12 @@ async function syncReturnsToCloud(silent){
 document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
 document.getElementById('outboundDateInput').value = new Date().toISOString().slice(0,10);
 renderReturnUploadStatus();
-window.addEventListener('claims-auth-ready',function(e){if(e.detail&&e.detail.admin) renderReturnCloudStatus();});
+  window.addEventListener('claims-auth-ready',function(e){
+    if(e.detail&&e.detail.admin){ renderReturnCloudStatus(); renderOutboundCloudStatus(); }
+  });
+  window.addEventListener('claims-cloud-saved',function(e){
+    if(e.detail&&e.detail.key==='pi_outbound_batches') renderOutboundCloudStatus();
+  });
 
 var pendingUpload = null;
 function handleReturnFile(f){
