@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="claims-auth.js"></script>
-<script defer src="claims-data.js"></script>
+<script defer src="claims-auth.js?v=20260921-cloud"></script>
+<script defer src="claims-data.js?v=20260921-cloud"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -182,7 +182,7 @@
   .pill.wait{background:var(--pending-soft); color:var(--pending-deep);}
 </style>
 
-<script>
+<script type="text/plain" data-cloud-page>
 function showToast(msg, warn){
   var t = document.createElement('div');
   t.textContent = msg;
@@ -191,7 +191,7 @@ function showToast(msg, warn){
   setTimeout(function(){ t.remove(); }, 2400);
 }
 var S='pi_outbound_batches', Q='pi_tracking_results';
-function loadTrk(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); } catch(e){ return []; } }
+function loadTrk(k){ try{ return JSON.parse(ClaimsDB.getItem(k)||'[]'); } catch(e){ return []; } }
 function norm(v){ return String(v||'').replace(/[^A-Za-z0-9]/g,'').trim(); }
 function parseDateTrk(v){
   var s = String(v||'').trim();
@@ -210,7 +210,7 @@ function outgoing(){ return loadTrk(S); }
 function claimedTracking(){
   var map = {};
   try{
-    JSON.parse(localStorage.getItem('pi_claims_history') || '[]').forEach(function(claim){
+    JSON.parse(ClaimsDB.getItem('pi_claims_history') || '[]').forEach(function(claim){
       String(claim.tracking || '').split(',').forEach(function(value){
         var key = norm(value);
         if(key) map[key] = true;
@@ -231,9 +231,11 @@ function isAwaitingSignature(x){
   return /ยังไม่เซ็นรับ(?:พัสดุ)?|not\s*signed|unsigned/.test(String(x.status||'').toLowerCase());
 }
 function renderDays(){
+  var chosen=document.getElementById('day').value;
   var a = Array.from(new Set(outgoing().map(function(x){return x.date;}).filter(Boolean))).sort().reverse();
   var el = document.getElementById('day');
   el.innerHTML = a.length ? a.map(function(x){ return '<option>'+x+'</option>'; }).join('') : '<option>ยังไม่มีข้อมูลส่งออก</option>';
+  if(a.includes(chosen)) el.value=chosen;
   render();
 }
 function render(){
@@ -282,25 +284,8 @@ function renderBatchPicker(total){
 }
 async function readTrkFile(f, requireSignature){
   var buf = await f.arrayBuffer();
-  var wb, a;
-  if(/\.csv$/i.test(f.name)){
-    var bytes = new Uint8Array(buf);
-    var encodings = ['utf-8','windows-874'];
-    var best = [];
-    encodings.forEach(function(encoding){
-      try{
-        var text = new TextDecoder(encoding).decode(bytes);
-        var csvBook = XLSX.read(text, {type:'string', cellDates:true});
-        var rows = XLSX.utils.sheet_to_json(csvBook.Sheets[csvBook.SheetNames[0]], {defval:'', raw:false});
-        var score = rows.length ? Object.keys(rows[0]).join('').replace(/[^\u0E00-\u0E7FA-Za-z]/g,'').length : 0;
-        if(!best.length || score > best.score) { best = rows; best.score = score; }
-      }catch(e){}
-    });
-    a = best;
-  }else{
-    wb = XLSX.read(buf, {type:'array', cellDates:true});
-    a = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:'', raw:false});
-  }
+  var wb=ClaimsDB.readWorkbook(buf,f.name);
+  var a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:'', raw:false});
   var cols = a.length ? Object.keys(a[0]) : [];
   function header(v){ return String(v||'').toLowerCase().replace(/[\s_\-()]/g,''); }
   function find(words){ return cols.find(function(c){ var h=header(c); return words.some(function(w){ return h.includes(header(w)); }); }); }
@@ -340,7 +325,7 @@ async function readTrkFile(f, requireSignature){
     return item;
   }).filter(function(x){ return x.tracking; });
 }
-function putTrk(list, source){
+async function putTrk(list, source){
   var d = document.getElementById('day').value;
   var all = loadTrk(Q);
   var old = all.filter(function(x){ return x.shipDate!==d; });
@@ -350,7 +335,7 @@ function putTrk(list, source){
     var previous = mp[x.tracking] || {tracking:x.tracking, shipDate:d};
     mp[x.tracking] = Object.assign({}, previous, x, {shipDate:d, lastSource:source});
   });
-  localStorage.setItem(Q, JSON.stringify(old.concat(Object.values(mp))));
+  await ClaimsDB.setItem(Q, JSON.stringify(old.concat(Object.values(mp))));
   render();
 }
 function showRawImportInfo(rows){
@@ -379,13 +364,13 @@ document.getElementById('copyPending').addEventListener('click', async function(
   await navigator.clipboard.writeText(r.join('\n'));
   showToast('คัดลอก '+r.length+' เลขแล้ว');
 });
-document.getElementById('clearDayResults').addEventListener('click', function(){
+document.getElementById('clearDayResults').addEventListener('click', async function(){
   var d = document.getElementById('day').value;
   var all = loadTrk(Q);
   var found = all.some(function(x){ return x.shipDate===d; });
   if(!found){ showToast('ยังไม่มีผลตรวจของวันนี้ให้ล้าง', true); return; }
   if(!confirm('ล้างผลตรวจทั้งหมดของวันที่ '+d+' ใช่ไหม? ทะเบียนส่งออกและข้อมูลเคลมจะไม่ถูกลบ')) return;
-  localStorage.setItem(Q, JSON.stringify(all.filter(function(x){ return x.shipDate!==d; })));
+  await ClaimsDB.setItem(Q, JSON.stringify(all.filter(function(x){ return x.shipDate!==d; })));
   document.getElementById('rawFile').value = '';
   document.getElementById('rawName').textContent = 'อัปโหลดผลสถานะ (เลือกได้หลายไฟล์)';
   document.getElementById('rawImportInfo').style.display = 'none';
@@ -407,7 +392,7 @@ document.getElementById('rawFile').addEventListener('change', async function(e){
     document.getElementById('rawName').textContent = 'กำลังจับคู่เลขพัสดุ…';
     await new Promise(function(resolve){ setTimeout(resolve, 0); });
     showRawImportInfo(merged);
-    putTrk(merged, 'raw');
+    await putTrk(merged, 'raw');
     document.getElementById('rawName').textContent = 'อัปโหลดผลสถานะแล้ว '+files.length+' ไฟล์';
     showToast('รวมผล '+files.length+' ไฟล์แล้ว');
   }
@@ -418,7 +403,7 @@ document.getElementById('rawFile').addEventListener('change', async function(e){
   }
 });
 document.getElementById('detailFile').addEventListener('change', async function(e){
-  try{ document.getElementById('detailName').textContent = e.target.files[0].name; putTrk(await readTrkFile(e.target.files[0]), 'detail'); }
+  try{ document.getElementById('detailName').textContent = e.target.files[0].name; await putTrk(await readTrkFile(e.target.files[0]), 'detail'); }
   catch(err){ showToast(err.message, true); }
 });
 document.getElementById('day').addEventListener('change', render);
@@ -426,6 +411,7 @@ window.addEventListener('storage', function(e){
   if(e.key==='pi_claims_history') render();
 });
 renderDays();
+window.renderCloudPage=renderDays;
 </script>
 </body>
 </html>

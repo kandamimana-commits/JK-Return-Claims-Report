@@ -10,7 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="claims-auth.js"></script>
+<script defer src="claims-auth.js?v=20260921-cloud"></script>
+<script defer src="claims-data.js?v=20260921-cloud"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -128,7 +129,7 @@
   </main>
 </div>
 
-<script>
+<script type="text/plain" data-cloud-page>
 var thaiMonthsArc = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 function archiveMonthLabel(m){
   var p = m.split('-');
@@ -148,7 +149,7 @@ function downloadArchive(rows, m){
 }
 function renderArchive(){
   var list = [];
-  try{ list = JSON.parse(localStorage.getItem('pi_returns_archive') || '[]'); } catch(e){ list = []; }
+  try{ list = JSON.parse(ClaimsDB.getItem('pi_returns_archive') || '[]'); } catch(e){ list = []; }
   list.sort(function(a,b){ return b.month.localeCompare(a.month); });
   var box = document.getElementById('archiveList');
   if(!list.length){
@@ -175,12 +176,14 @@ function renderArchive(){
 }
 renderArchive();
 function archiveCount(key, field){
-  try{ return new Set(JSON.parse(localStorage.getItem(key)||'[]').map(function(x){ return x[field]; }).filter(Boolean)).size; }
+  try{ return new Set(JSON.parse(ClaimsDB.getItem(key)||'[]').map(function(x){ return x[field]; }).filter(Boolean)).size; }
   catch(e){ return 0; }
 }
+window.renderCloudPage=function(){renderArchive();
 document.getElementById('returnArchiveCount').textContent = archiveCount('pi_returns_archive','month') + ' รอบ';
 document.getElementById('outboundArchiveCount').textContent = archiveCount('pi_outbound_batches','date') + ' วัน';
 document.getElementById('trackingArchiveCount').textContent = archiveCount('pi_tracking_results','shipDate') + ' วัน';
+};window.renderCloudPage();
 </script>
 </body>
 </html>

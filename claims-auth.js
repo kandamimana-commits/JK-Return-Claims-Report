@@ -1,6 +1,6 @@
 (function(){
   var URL='https://liwufucwbcmrvibuhipy.supabase.co', KEY='sb_publishable_O5svMu6j-c74TGYdBXpbuA_BQYXzLGQ';
-  var locked=['pi-enter-data.html','pi-tracking.html','pi-archive.html'];
+  var locked=['pi-enter-data.html','pi-tracking.html','pi-archive.html','pi-archive-outbound.html','pi-archive-returns.html','pi-archive-tracking.html'];
   var page=(location.pathname.split('/').pop()||'index.html').toLowerCase(), privatePage=locked.indexOf(page)!==-1;
   var client=window.supabase&&window.supabase.createClient?window.supabase.createClient(URL,KEY):null;
   window.claimsSupabase=client;

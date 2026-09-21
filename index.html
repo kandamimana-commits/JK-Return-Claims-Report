@@ -10,7 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="claims-auth.js"></script>
+<script defer src="claims-auth.js?v=20260921-cloud"></script>
+<script defer src="claims-data.js?v=20260921-cloud"></script>
 <style>
   :root{
     --bg:#FBF2E2; --surface:#FFFFFF; --surface-kraft:#F3E4C8;
@@ -130,7 +131,7 @@
     <div class="grid2">
       <div class="card">
         <p class="section-label">🥧 อัตราตีกลับต่อยอดส่งออก</p>
-        <p class="hint">เดือนนี้ — เทียบสัดส่วนพัสดุที่ตีกลับกับยอดส่งออกทั้งหมด</p>
+        <p class="hint">ตั้งแต่ 1 ก.ย. 2569 — เทียบสัดส่วนพัสดุที่ตีกลับกับยอดส่งออกทั้งหมด</p>
         <div class="pie-wrap">
           <div class="pie-chart" id="returnPie" style="background:conic-gradient(from 0deg, #C94F4F 0% 8%, #E8D9C4 8% 100%);"></div>
           <div class="pie-legend">
@@ -142,7 +143,7 @@
 
       <div class="card">
         <p class="section-label">💰 ยอด COD ของพัสดุตีกลับ</p>
-        <p class="hint">เดือนนี้ — มูลค่า COD รวมของพัสดุที่ตีกลับมา</p>
+        <p class="hint">ตั้งแต่ 1 ก.ย. 2569 — มูลค่า COD รวมของพัสดุที่ตีกลับมา</p>
         <div class="stat-grid">
           <div class="stat-card money"><p class="stat-label">ยอด COD ตีกลับรวม</p><p class="stat-num" id="returnCod">฿0</p></div>
           <div class="stat-card"><p class="stat-label">จำนวนพัสดุ</p><p class="stat-num" id="returnCount">0</p></div>
@@ -152,7 +153,7 @@
 
     <div class="card">
       <p class="section-label">🏆 สินค้าที่ตีกลับมากที่สุด (10 อันดับแรก)</p>
-      <p class="hint">เดือนนี้</p>
+      <p class="hint">ตั้งแต่ 1 ก.ย. 2569</p>
       <table>
         <thead><tr><th></th><th>ชื่อสินค้า</th><th>รหัสสินค้า</th><th style="text-align:right;">จำนวนชิ้น</th></tr></thead>
         <tbody id="topReturns">
@@ -217,17 +218,11 @@
   </main>
 </div>
 
-<script>
-(function(){
-  if(localStorage.getItem('pi_returns_reset_202609') !== 'done'){
-    localStorage.removeItem('pi_returns_data');
-    localStorage.setItem('pi_returns_reset_202609', 'done');
-  }
-  if(localStorage.getItem('pi_returns_reset_202609_namefix') !== 'done'){
-    localStorage.removeItem('pi_returns_data');
-    localStorage.setItem('pi_returns_reset_202609_namefix', 'done');
-  }
-  function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
+<script type="text/plain" data-cloud-page>
+window.renderCloudPage=function(){
+
+
+  function load(k){try{return JSON.parse(ClaimsDB.getItem(k)||'[]')}catch(e){return []}}
   function norm(v){return String(v||'').replace(/[^A-Za-z0-9]/g,'')}
   function money(v){return '฿'+Number(v||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
   var REPORT_START='2026-09-01';
@@ -248,6 +243,7 @@
   function applyCloudReport(data){
     if(!data) return;
     var sent=Number(data.sent||0), returned=Number(data.returned||0), pct=sent?(returned/sent*100):0;
+    pct=Math.max(0,Math.min(100,pct));
     var pctText=(Math.round(pct*10)/10).toLocaleString('th-TH',{minimumFractionDigits:1,maximumFractionDigits:1});
     document.getElementById('returnCount').textContent=returned;
     document.getElementById('returnCod').textContent=money(data.cod||0);
@@ -265,13 +261,13 @@
     document.getElementById('productSharePie').style.background='conic-gradient('+parts.join(',')+')';
     document.getElementById('productShareLegend').innerHTML='<p class="hint" style="margin-bottom:7px;">สัดส่วนจำนวนชิ้นตีกลับทั้งหมด '+totalItems.toLocaleString()+' ชิ้น</p>'+legend.join('');
   }
-  async function loadCloudReport(){
-    if(!window.claimsSupabase) return;
-    var res=await window.claimsSupabase.rpc('claims_public_report');
-    if(!res.error) applyCloudReport(res.data);
-  }
-  window.addEventListener('claims-auth-ready', loadCloudReport);
-})();
+  applyCloudReport({
+    sent:sent,returned:ids.length,cod:cod,
+    return_items:returns.reduce(function(n,x){return n+Number(x.qty||0);},0),
+    top_returns:Object.values(product).sort(function(a,b){return b.qty-a.qty;}).slice(0,10).map(function(x){return {product_name:cleanSku(x.name),sku:x.sku,quantity:x.qty};})
+  });
+};
+window.renderCloudPage();
 </script>
 </body>
 </html>

@@ -10,7 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="claims-auth.js"></script>
+<script defer src="claims-auth.js?v=20260921-cloud"></script>
+<script defer src="claims-data.js?v=20260921-cloud"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -142,7 +143,7 @@
     <div class="card" style="padding:0; overflow-x:auto;">
       <p class="section-label" style="padding:22px 22px 0;">📦 สินค้าที่ตีกลับ ในช่วงที่เลือก</p>
       <table>
-        <thead><tr><th>ชื่อสินค้า</th><th>จำนวนชิ้น</th><th>จำนวนออเดอร์</th></tr></thead>
+        <thead><tr><th>ชื่อสินค้า</th><th>รหัสสินค้า</th><th>จำนวนชิ้น</th><th>จำนวนออเดอร์</th></tr></thead>
         <tbody id="summaryBody"></tbody>
       </table>
       <div class="empty" id="summaryEmpty">ไม่มีข้อมูลในช่วงที่เลือก</div>
@@ -150,7 +151,7 @@
   </main>
 </div>
 
-<script>
+<script type="text/plain" data-cloud-page>
 function showToast(msg, warn){
   var t = document.createElement('div');
   t.textContent = msg;
@@ -159,7 +160,7 @@ function showToast(msg, warn){
   setTimeout(function(){ t.remove(); }, 2400);
 }
 function getReturnsData(){
-  try{ return JSON.parse(localStorage.getItem('pi_returns_data') || '[]'); } catch(e){ return []; }
+  try{ return JSON.parse(ClaimsDB.getItem('pi_returns_data') || '[]'); } catch(e){ return []; }
 }
 
 var viewMode = 'day';
@@ -174,8 +175,9 @@ function setViewMode(mode){
   render();
 }
 
-var now = new Date();
-document.getElementById('viewDayInput').valueAsDate = now;
+var lastReturnDate=getReturnsData().map(function(x){return x.date;}).filter(Boolean).sort().pop();
+var now = lastReturnDate ? new Date(lastReturnDate+'T12:00:00') : new Date();
+document.getElementById('viewDayInput').value = lastReturnDate || now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 document.getElementById('viewMonthInput').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
 document.getElementById('viewDayInput').addEventListener('change', render);
 document.getElementById('viewMonthInput').addEventListener('change', render);
@@ -190,6 +192,7 @@ function thaiDateLabel(iso){
   return parseInt(parts[2]) + ' ' + thaiMonths[parseInt(parts[1])-1] + ' ' + (parseInt(parts[0])+543);
 }
 
+function escapeReturn(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function render(){
   var data = getReturnsData();
   var rows, label;
@@ -204,25 +207,37 @@ function render(){
   }
 
   document.getElementById('orderHeroLabel').textContent = 'จำนวนออเดอร์ที่ตีกลับ — ' + label;
-  var orders = new Set(rows.map(function(r){ return r.order; }).filter(Boolean));
+  var orders = new Set(rows.map(function(r){ return r.order || r.tracking; }).filter(Boolean));
   document.getElementById('orderHeroNum').textContent = orders.size.toLocaleString();
 
-  var byProduct = {};
+  var byProduct = Object.create(null);
   rows.forEach(function(r){
-    if(!byProduct[r.product]) byProduct[r.product] = {qty:0, orders:{}};
-    byProduct[r.product].qty += (r.qty||0);
-    if(r.order) byProduct[r.product].orders[r.order] = true;
+    var code=ClaimsDB.cleanSku(r.sku).toUpperCase(), key=code || ClaimsDB.cleanSku(r.product);
+    if(!byProduct[key]) byProduct[key] = {name:ClaimsDB.cleanSku(r.product),sku:code,qty:0, orders:Object.create(null)};
+    byProduct[key].qty += Number(r.qty||0);
+    if(r.order||r.tracking) byProduct[key].orders[r.order||r.tracking] = true;
   });
   var summaryRows = Object.keys(byProduct).map(function(p){
-    return {product:p, qty:byProduct[p].qty, orders:Object.keys(byProduct[p].orders).length};
+    return {product:byProduct[p].name, sku:byProduct[p].sku, qty:byProduct[p].qty, orders:Object.keys(byProduct[p].orders).length};
   });
   summaryRows.sort(function(a,b){ return b.qty-a.qty; });
   document.getElementById('summaryEmpty').style.display = summaryRows.length ? 'none' : 'block';
   document.getElementById('summaryBody').innerHTML = summaryRows.map(function(s){
-    return '<tr><td>'+s.product+'</td><td>'+s.qty+'</td><td>'+s.orders+'</td></tr>';
+    return '<tr><td>'+escapeReturn(s.product)+'</td><td>'+escapeReturn(s.sku||'—')+'</td><td>'+s.qty+'</td><td>'+s.orders+'</td></tr>';
   }).join('');
 }
-render();
+function updateReturnDates(){
+  var dates=Array.from(new Set(getReturnsData().map(function(x){return x.date;}).filter(Boolean))).sort().reverse();
+  var note=document.getElementById('returnLastDate');
+  if(!note){note=document.createElement('p');note.id='returnLastDate';note.className='hint';document.querySelector('.pagesub').after(note);}
+  note.textContent=dates.length?'ตีกลับล่าสุดที่บันทึก: '+thaiDateLabel(dates[0])+' · '+dates.length+' วันที่มีข้อมูล':'ยังไม่มีข้อมูลตีกลับบน Cloud';
+  var select=document.getElementById('savedReturnDay');
+  if(!select){select=document.createElement('select');select.id='savedReturnDay';select.style.cssText='max-width:460px;margin-bottom:18px';document.querySelector('.order-hero').before(select);select.onchange=function(){if(select.value){document.getElementById('viewDayInput').value=select.value;setViewMode('day');}};}
+  select.replaceChildren();var opt=document.createElement('option');opt.value='';opt.textContent='เลือกวันที่ที่มีข้อมูลบน Cloud';select.append(opt);
+  dates.forEach(function(d){var option=document.createElement('option');option.value=d;option.textContent=thaiDateLabel(d);select.append(option);});
+}
+window.renderCloudPage=function(){updateReturnDates();render();};
+window.renderCloudPage();
 </script>
 </body>
 </html>
