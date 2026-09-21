@@ -359,7 +359,11 @@ function renderClaimHistory(){
     if(histTo && (!c.dateFiled || c.dateFiled > histTo)) return false;
     if(!matchesMultiSearch(c, searchTerms)) return false;
     return true;
-  }).reverse();
+  }).sort(function(a, b){
+    // Sort the display only; keep original indices for edit/delete handlers.
+    var byDate = String(b.c.dateFiled || '').localeCompare(String(a.c.dateFiled || ''));
+    return byDate || a.idx - b.idx;
+  });
   document.getElementById('claimHistoryEmpty').style.display = visible.length ? 'none' : 'block';
   var statusOpts = {pending:'รอดำเนินการ', transferred:'โอนแล้ว', rejected:'ปฏิเสธ'};
   var statusColor = {pending:{bg:'var(--pending-soft)', fg:'var(--pending-deep)'}, transferred:{bg:'var(--stamp-green-soft)', fg:'var(--stamp-green-deep)'}, rejected:{bg:'var(--stamp-red-soft)', fg:'var(--stamp-red-deep)'}};
