@@ -13,6 +13,7 @@ const needed=({
  'pi-archive-returns.html':[keys[4]],'pi-archive-tracking.html':[keys[2]]
 })[page]||[];
 let cache={},versions={},ready=false,admin=false,busy=false,draftDB,initialized=false;
+let refreshing=false,lastCheckAt=0,dataEpoch=0,interactionEpoch=0;
 const clone=v=>JSON.parse(JSON.stringify(v));
 const norm=v=>String(v||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
 const clean=v=>String(v||'').replace(/เทเล\s*-/gi,'').replace(/อัพ/g,'').replace(/\s+/g,' ').trim();
@@ -66,6 +67,7 @@ function lock(on){document.querySelectorAll('main,.wrap').forEach(el=>el.inert=o
 function describe(error){
  const text=error?.message||'เชื่อมต่อไม่สำเร็จ';
  if(text.includes('DATA_CHANGED'))return 'มีข้อมูลเปลี่ยนจากอีกเครื่อง กรุณาโหลดข้อมูลล่าสุดก่อนทำรายการใหม่ ฉบับร่างยังอยู่ในรายการรอส่ง';
+ if(text.includes('claims_web_versions'))return 'กรุณารัน supabase-refresh-upgrade.sql เพื่อเปิดการตรวจข้อมูลใหม่แบบรวดเร็ว';
  if(error?.code==='PGRST202'||text.includes('claims_web_'))return 'ฐานข้อมูลยังไม่พร้อม ให้ผู้ดูแลรัน supabase-migration.sql ก่อน';
  return text;
 }
@@ -102,10 +104,20 @@ async function readCollection(key){
   }catch(e){if(!String(e.message).includes('DATA_CHANGED')||attempt===2)throw e;}
  }
 }
-async function load(){
- const all=await Promise.all(needed.map(async key=>[key,await readCollection(key)]));
+async function fetchCollections(selected){
+ return Promise.all(selected.map(async key=>[key,await readCollection(key)]));
+}
+function applyCollections(all){
  all.forEach(([key,data])=>{cache[key]=data.rows;versions[key]=data.version;});
 }
+async function load(){applyCollections(await fetchCollections(needed));}
+async function readVersions(){
+ const result=await window.claimsSupabase.rpc('claims_web_versions',{p_keys:needed});
+ if(result.error)throw result.error;
+ if(!result.data||needed.some(key=>result.data[key]==null||!Number.isSafeInteger(Number(result.data[key]))))throw Error('ข้อมูลเวอร์ชันตอบกลับไม่ครบ');
+ return result.data;
+}
+function editing(){return /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'')||!!document.activeElement?.isContentEditable;}
 function renderPage(){
  window.renderCloudPage?.();
  if(page==='pi-claims.html'&&!admin){
@@ -113,12 +125,28 @@ function renderPage(){
  }
 }
 async function refresh(force=false){
- if(!ready||busy)return;
- if(force!==true&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||''))return;
- busy=true;lock(true);message('กำลังอ่านข้อมูลล่าสุดจาก Supabase…');
- try{await load();renderPage();message('ข้อมูลจาก Supabase · อัปเดต '+new Date().toLocaleTimeString('th-TH'));}
- catch(e){message('โหลดไม่สำเร็จ — ข้อมูลที่แสดงอาจยังไม่ล่าสุด: '+describe(e),true,{text:'ลองใหม่',run:()=>refresh(true)});}
- finally{busy=false;lock(false);}
+ if(!ready||busy||refreshing)return;
+ // Focus and visibility events often arrive together. Coalesce their cheap checks.
+ if(force!==true&&(editing()||Date.now()-lastCheckAt<5000))return;
+ refreshing=true;lastCheckAt=Date.now();
+ const startData=dataEpoch,startInteraction=interactionEpoch;
+ const interrupted=()=>busy||dataEpoch!==startData||interactionEpoch!==startInteraction||editing();
+ try{
+  const latest=await readVersions();
+  if(interrupted())return;
+  const changed=needed.filter(key=>Number(latest[key])!==versions[key]);
+  if(!changed.length){
+   if(force===true)message('ข้อมูลเป็นเวอร์ชันล่าสุดแล้ว · ไม่ต้องโหลดซ้ำ');
+   return;
+  }
+  // Stage the result; never overwrite a concurrent save or a user's active form.
+  const fresh=await fetchCollections(changed);
+  if(interrupted())return;
+  applyCollections(fresh);dataEpoch++;renderPage();
+  message('ข้อมูลจาก Supabase · อัปเดตเฉพาะส่วนที่เปลี่ยน '+new Date().toLocaleTimeString('th-TH'));
+ }catch(e){
+  if(!interrupted())message('ตรวจข้อมูลใหม่ไม่สำเร็จ — ยังแสดงข้อมูลครั้งล่าสุด: '+describe(e),true,{text:'ลองใหม่',run:()=>refresh(true)});
+ }finally{refreshing=false;}
 }
 async function commit(changes,draftId){
  const result=await window.claimsSupabase.rpc('claims_web_save',{p_changes:changes});
@@ -133,7 +161,7 @@ async function commit(changes,draftId){
 async function saveMany(values){
  if(!ready||!admin)throw Error('กรุณาล็อกอินด้วยบัญชีแอดมินก่อนบันทึก');
  if(busy)throw Error('กำลังทำรายการอื่น กรุณารอให้เสร็จก่อน');
- busy=true;lock(true);
+ busy=true;dataEpoch++;lock(true);
  const changes={},draft={id:crypto.randomUUID(),createdAt:new Date().toISOString(),changes};
  try{
   for(const key of Object.keys(values).sort()){
@@ -173,7 +201,7 @@ async function recovery(){
   const backup=document.createElement('button');backup.textContent='สำรอง JSON';backup.onclick=()=>download(record.values,'jk888-recovery.json');row.append(backup);
   const bring=document.createElement('button');bring.textContent='นำเข้าเฉพาะที่ขาด';
   bring.onclick=async()=>{
-   if(busy)return;bring.disabled=true;busy=true;lock(true);
+   if(busy)return;bring.disabled=true;busy=true;dataEpoch++;lock(true);
    try{
     const values={};let added=0;
     for(const key of Object.keys(record.values)){
@@ -192,7 +220,7 @@ async function recovery(){
    retry.onclick=async()=>{
     if(busy)return;
     if(!confirm('ส่งรายการแก้ไขในฉบับร่างนี้อีกครั้ง? ระบบจะตรวจว่าข้อมูล Cloud ยังไม่ถูกแก้ไขจากรายการอื่น'))return;
-    busy=true;lock(true);retry.disabled=true;
+    busy=true;dataEpoch++;lock(true);retry.disabled=true;
     try{await commit(record.draft.changes,record.draft.id);await load();renderPage();info.textContent='ส่งฉบับร่างสำเร็จ';}
     catch(e){info.textContent=describe(e);}finally{busy=false;lock(false);retry.disabled=false;}
    };row.append(retry);
@@ -232,8 +260,10 @@ window.addEventListener('unhandledrejection',event=>{
  message('ทำรายการไม่สำเร็จ: '+describe(event.reason),true,{text:'รายการรอส่ง',run:recovery});event.preventDefault();
 });
 window.addEventListener('beforeunload',event=>{if(busy){event.preventDefault();event.returnValue='';}});
+// Activity after a background request starts makes its result unsafe to apply.
+['input','change','focusin','pointerdown','drop'].forEach(type=>document.addEventListener(type,()=>{interactionEpoch++;},true));
 window.addEventListener('focus',()=>refresh());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
-if(window.BroadcastChannel){const updates=new BroadcastChannel('jk888-cloud');updates.onmessage=()=>refresh();}
+if(window.BroadcastChannel){const updates=new BroadcastChannel('jk888-cloud');updates.onmessage=()=>{lastCheckAt=0;refresh();};}
 setInterval(()=>{if(!document.hidden)refresh();},60000);
 })();
