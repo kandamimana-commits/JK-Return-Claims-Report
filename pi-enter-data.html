@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="claims-auth.js?v=20260921-cloud"></script>
-<script defer src="claims-data.js?v=20260921-refresh"></script>
+<script defer src="claims-data.js?v=20260922-delta"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -245,16 +245,37 @@ function renderOutboundSummary(){
     select.appendChild(option);
   });
 }
+var uploadQueue=Promise.resolve(), queuedUploads=0, uploadFailures=[];
+function queueFileUpload(job,label){
+  queuedUploads++;
+  function status(){
+    var el=document.getElementById('uploadQueueNotice');
+    if(!el){el=document.createElement('p');el.id='uploadQueueNotice';el.className='hint';document.querySelector('main').prepend(el);}
+    var pending=queuedUploads?'กำลังดำเนินการ / รออัปโหลด '+queuedUploads+' ชุด — วันที่ของแต่ละชุดถูกเก็บไว้แล้ว':'';
+    el.textContent=pending+(uploadFailures.length?' | อัปไม่สำเร็จ '+uploadFailures.length+' ชุด: '+uploadFailures.join(' / ')+' — ตรวจไฟล์หรือเปิดรายการรอส่ง':'');
+  }
+  status();
+  uploadQueue=uploadQueue.then(job).catch(function(err){uploadFailures.push(label||'ไม่ทราบชื่อไฟล์');showToast(err.message||'อัปโหลดไม่สำเร็จ',true);}).finally(function(){queuedUploads--;status();});
+  return uploadQueue;
+}
+window.addEventListener('beforeunload',function(e){if(queuedUploads){e.preventDefault();e.returnValue='';}});
 function handleOutboundFiles(files){
+  files=Array.from(files||[]);
+  var selectedDate=document.getElementById('outboundDateInput').value;
+  if(!files.length)return;
+  if(!selectedDate){showToast('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์',true);return;}
+  return queueFileUpload(function(){return processOutboundFiles(files,selectedDate);},files.map(function(f){return f.name;}).join(' + ')+' ('+selectedDate+')');
+}
+function processOutboundFiles(files,selectedDate){
   files = Array.from(files || []);
   if(!files.length) return;
-  var selectedDate = document.getElementById('outboundDateInput').value;
   if(!selectedDate){ showToast('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์', true); return; }
   var batchId = 'outbound-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
   document.getElementById('outboundFileLabel').textContent = 'เลือกแล้ว '+files.length+' ไฟล์';
-  Promise.all(files.map(function(file){
+  return Promise.all(files.map(function(file){
     return new Promise(function(resolve, reject){
       var reader = new FileReader();
+      reader.onerror=function(){reject(reader.error||new Error('อ่านไฟล์ '+file.name+' ไม่สำเร็จ'));};
       reader.onload = async function(ev){
         try{
           var wb = ClaimsDB.readWorkbook(ev.target.result,file.name);
@@ -277,7 +298,7 @@ function handleOutboundFiles(files){
     var added = 0;
     groups.flat().forEach(function(r){ var key=r.tracking+'|'+r.date; if(known[key] === undefined){ current.push(r); known[key]=current.length-1; added++; } else { Object.assign(current[known[key]], r); } });
     await saveOutboundData(current); renderOutboundSummary(); showToast('บันทึกทะเบียนส่งออกใหม่ '+added.toLocaleString()+' เลข');
-  }).catch(function(err){ showToast(err.message || 'อ่านไฟล์ส่งออกไม่สำเร็จ', true); });
+  });
 }
 document.getElementById('outboundFileInput').addEventListener('change', async function(e){ handleOutboundFiles(e.target.files); });
 document.getElementById('outboundFixDate').value = new Date().toISOString().slice(0,10);
@@ -321,14 +342,22 @@ renderReturnUploadStatus();
 
 var pendingUpload = null;
 function handleReturnFile(f){
+  if(!f)return;
+  var selectedDate=document.getElementById('uploadDate').value;
+  if(!selectedDate){showToast('เลือกวันที่ตีกลับก่อน',true);return;}
+  return queueFileUpload(function(){return processReturnFile(f,selectedDate);},f.name+' ('+selectedDate+')');
+}
+function processReturnFile(f,selectedDate){
   document.getElementById('fileLabel').textContent = f ? f.name : 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
   if(!f) return;
+  return new Promise(function(resolve,reject){
   var reader = new FileReader();
+  reader.onerror=function(){reject(reader.error||new Error('อ่านไฟล์ไม่สำเร็จ'));};
   reader.onload = async function(ev){
     try{
       var wb = ClaimsDB.readWorkbook(ev.target.result,f.name);
       var data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
-      if(!data.length){ showToast('ไฟล์ว่างเปล่า', true); return; }
+      if(!data.length) throw new Error('ไฟล์ว่างเปล่า');
       var cols = Object.keys(data[0]);
       var trackCol = cols.find(function(c){return c.indexOf('เลขพัสดุ')!==-1;});
       // ใช้คอลัมน์ O “ชื่อสินค้า” เท่านั้น: คอลัมน์ “สินค้า” เป็นรหัส/รายละเอียดรวม ไม่ใช่ชื่อสินค้า
@@ -337,10 +366,10 @@ function handleReturnFile(f){
       var qtyCol = cols.find(function(c){return c==='จำนวน';});
       var codCol = cols.find(function(c){return /ยอดเงิน\s*cod|ยอด\s*cod|^cod$/i.test(c);});
       var skuCol = cols.find(function(c){return String(c).replace(/\s+/g,'').trim()==='รหัสสินค้า';}) || cols.find(function(c){return /sku|product\s*code/i.test(c);});
-      if(!trackCol || !prodCol){ showToast('ไม่พบคอลัมน์ "เลขพัสดุ" หรือ "ชื่อสินค้า" ในไฟล์', true); return; }
+      if(!trackCol || !prodCol) throw new Error('ไม่พบคอลัมน์ "เลขพัสดุ" หรือ "ชื่อสินค้า" ในไฟล์');
 
-      var date = document.getElementById('uploadDate').value;
-      if(!date){ showToast('เลือกวันที่ตีกลับก่อน', true); return; }
+      var date = selectedDate;
+      if(!date) throw new Error('เลือกวันที่ตีกลับก่อน');
       returnsData = getReturnsData();
 
       var rows = data.map(function(row){
@@ -356,7 +385,7 @@ function handleReturnFile(f){
         };
       }).filter(function(r){ return r.tracking && r.product; });
 
-      if(!rows.length){ showToast('ไม่พบรายการใหม่ (อาจซ้ำกับที่มีอยู่แล้วทั้งหมด)', true); return; }
+      if(!rows.length) throw new Error('ไม่พบรายการที่มีเลขพัสดุและชื่อสินค้าในไฟล์');
 
       var byProduct = {};
       rows.forEach(function(r){
@@ -372,7 +401,7 @@ function handleReturnFile(f){
       returnsData = ClaimsDB.mergeIncoming("pi_returns_data", returnsData, rows);
       await saveData();
       pendingUpload = null;
-      document.getElementById('uploadPreviewSummary').textContent = 'บันทึกแล้ว ' + rows.length + ' รายการใหม่ (' + summaryRows.length + ' สินค้า) ลง Supabase สำเร็จ';
+      document.getElementById('uploadPreviewSummary').textContent = 'ประมวลผล ' + rows.length + ' รายการจากไฟล์ (' + summaryRows.length + ' สินค้า) · Supabase ยืนยันการบันทึกแล้ว';
       document.getElementById('uploadPreviewBody').innerHTML = summaryRows.map(function(s){
         return '<tr><td>'+s.product+'</td><td>'+s.qty+'</td><td>'+s.orders+'</td></tr>';
       }).join('');
@@ -383,9 +412,11 @@ function handleReturnFile(f){
       document.getElementById('fileLabel').textContent = 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
       renderAll();
       showToast('บันทึกตีกลับแล้ว '+rows.length+' รายการ');
-    } catch(err){ returnsData=getReturnsData(); showToast(err.message || 'อ่านหรือบันทึกไฟล์ไม่สำเร็จ', true); }
+    } catch(err){ returnsData=getReturnsData(); reject(err); }
+    finally{resolve();}
   };
   reader.readAsArrayBuffer(f);
+  });
 }
 document.getElementById('fileInput').addEventListener('change', async function(e){ handleReturnFile(e.target.files[0]); });
 
