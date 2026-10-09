@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="claims-auth.js?v=20260921-cloud"></script>
-<script defer src="claims-data.js?v=20260922-delta"></script>
+<script defer src="claims-data.js?v=20261009-monthly"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -114,7 +114,8 @@
 
   <main class="main">
     <p class="pagetitle">Enter data</p>
-    <p class="pagesub">อัปโหลดข้อมูลตีกลับ และปิดรอบเดือน</p>
+    <p class="pagesub">อัปโหลดข้อมูลรายเดือน — ข้อมูลรอบเก่าเก็บไว้ดูย้อนหลัง</p>
+    <div class="card"><label for="entryMonth">เดือนที่กำลังทำงาน</label><input type="month" id="entryMonth" style="max-width:240px;"><p class="hint" id="entryMonthNote" style="margin-top:10px;"></p><a href="pi-archive.html">ดูข้อมูลเดือนเก่าใน Archive →</a></div>
 
     <div class="card" id="outboundUploadCard">
       <div class="toolbar">
@@ -179,8 +180,8 @@
 
     <div class="month-card" style="margin-top:18px;">
       <p class="section-label">🎉 ปิดรอบเดือน</p>
-      <p class="hint">เมื่อบันทึกข้อมูลตีกลับของเดือนนี้ครบแล้ว ให้ปิดรอบเพื่อส่งออกไฟล์และเริ่มบันทึกเดือนใหม่</p>
-      <button class="btn-main" id="finishMonthBtn">ปิดรอบเดือนนี้ (ส่งออกไฟล์)</button>
+      <p class="hint">เมื่อบันทึกส่งออกและตีกลับครบแล้ว ให้ปิดเดือนที่เลือก ประวัติยังอยู่ใน Archive และ Tracking งานเคลมค้างไม่ถูกรีเซ็ต</p>
+      <button class="btn-main" id="finishMonthBtn">ปิดเดือนที่เลือก (ส่งออกและตีกลับ)</button>
     </div>
   </main>
 </div>
@@ -196,6 +197,22 @@ function showToast(msg, warn){
   setTimeout(function(){ t.remove(); }, 2400);
 }
 
+var entryMonthPinned=false;
+function entryMonth(){return document.getElementById('entryMonth').value||ClaimsDB.activeMonth();}
+function monthRowsOnly(rows){return rows.filter(function(r){return (r.date||'').slice(0,7)===entryMonth();});}
+function renderMonthScope(){
+ var input=document.getElementById('entryMonth'), active=ClaimsDB.activeMonth();
+ if(!entryMonthPinned||!input.value)input.value=active;
+ entryMonthPrevious=input.value;
+ var closed=ClaimsDB.read('pi_returns_archive').some(function(x){return x.month===input.value;});
+ document.getElementById('entryMonthNote').textContent='รอบปัจจุบัน: '+monthLabel(active)+' · กำลังดู '+monthLabel(input.value)+(closed?' (ปิดแล้ว — ดูย้อนหลัง/แก้ไขเพิ่มเติม)':'');
+ ['outboundDateInput','uploadDate','outboundFixDate'].forEach(function(id){var el=document.getElementById(id);if(el.value.slice(0,7)!==input.value)el.value=input.value+'-01';});
+}
+document.getElementById('entryMonth').addEventListener('change',function(){
+ if(!this.value||queuedUploads||pendingUpload){showToast('บันทึกหรือยกเลิกไฟล์ที่รอก่อนเปลี่ยนเดือน',true);this.value=entryMonthPrevious;return;}
+ entryMonthPinned=this.value!==ClaimsDB.activeMonth();window.renderCloudPage();
+});
+var entryMonthPrevious=ClaimsDB.activeMonth();
 function getReturnsData(){
   try{ return JSON.parse(ClaimsDB.getItem('pi_returns_data') || '[]'); } catch(e){ return []; }
 }
@@ -204,9 +221,9 @@ function getOutboundData(){
 }
 async function saveOutboundData(rows){ await ClaimsDB.setItem("pi_outbound_batches", JSON.stringify(rows)); }
 function renderOutboundCloudStatus(){
-    var el=document.getElementById('outboundCloudStatus'), rows=getOutboundData();
+    var el=document.getElementById('outboundCloudStatus'), rows=monthRowsOnly(getOutboundData());
     var dates=rows.map(function(x){return x.date;}).filter(Boolean).sort();
-    el.style.display='block';el.textContent=dates.length ? 'ส่งออกที่บันทึกบน Cloud ล่าสุด '+dates[dates.length-1]+' · '+rows.length.toLocaleString()+' เลข' : 'ยังไม่มีทะเบียนส่งออกบน Cloud';
+    el.style.display='block';el.textContent=dates.length ? 'ส่งออกที่บันทึกบน Cloud ล่าสุด '+dates[dates.length-1]+' · '+rows.length.toLocaleString()+' เลข' : 'ยังไม่มีทะเบียนส่งออกของเดือน '+entryMonth();
   }
 function outboundDate(value){
   var text = String(value || '').trim();
@@ -219,9 +236,9 @@ function outboundDate(value){
 }
 var outboundBatchGroups = [];
 function renderOutboundSummary(){
-  var rows = getOutboundData();
+  var rows = monthRowsOnly(getOutboundData());
   var dates = Array.from(new Set(rows.map(function(r){ return r.date; }).filter(Boolean))).sort().reverse();
-  document.getElementById('outboundSummary').textContent = rows.length ? 'บันทึกแล้ว '+rows.length.toLocaleString()+' เลข จาก '+dates.length+' วันส่งล่าสุด' : 'ยังไม่มีทะเบียนส่งออก';
+  document.getElementById('outboundSummary').textContent = rows.length ? 'บันทึกแล้ว '+rows.length.toLocaleString()+' เลข จาก '+dates.length+' วันในเดือน '+entryMonth() : 'ยังไม่มีทะเบียนส่งออกของเดือน '+entryMonth();
   var groups = {};
   rows.forEach(function(row){
     var key = row.batchId || ('legacy-' + row.date);
@@ -264,6 +281,7 @@ function handleOutboundFiles(files){
   var selectedDate=document.getElementById('outboundDateInput').value;
   if(!files.length)return;
   if(!selectedDate){showToast('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์',true);return;}
+  if(selectedDate.slice(0,7)!==entryMonth()){showToast('วันที่ส่งออกไม่ตรงกับเดือนที่เลือก กรุณาเปลี่ยนเดือนด้านบนก่อน',true);return;}
   return queueFileUpload(function(){return processOutboundFiles(files,selectedDate);},files.map(function(f){return f.name;}).join(' + ')+' ('+selectedDate+')');
 }
 function processOutboundFiles(files,selectedDate){
@@ -326,8 +344,8 @@ function renderReturnUploadStatus(){
     var anchor=document.getElementById('fileLabel');
     if(anchor&&anchor.parentElement) anchor.parentElement.after(el);
   }
-  var dates=Array.from(new Set(returnsData.map(function(x){return x.date;}).filter(Boolean))).sort();
-  if(!dates.length){el.innerHTML='<span style="color:var(--ink-soft);">📥 อัปโหลดไฟล์ตีกลับล่าสุด</span><strong style="display:block;margin-top:3px;">ยังไม่มีข้อมูล</strong>';return;}
+  var dates=Array.from(new Set(monthRowsOnly(returnsData).map(function(x){return x.date;}).filter(Boolean))).sort();
+  if(!dates.length){el.innerHTML='<span style="color:var(--ink-soft);">📥 อัปโหลดไฟล์ตีกลับล่าสุด</span><strong style="display:block;margin-top:3px;">ยังไม่มีข้อมูลของเดือน '+entryMonth()+'</strong>';return;}
   var last=dates[dates.length-1], count=returnsData.filter(function(x){return x.date===last;}).length;
   el.innerHTML='<span style="color:var(--ink-soft);">📥 อัปโหลดไฟล์ตีกลับล่าสุด</span><strong style="display:block;margin-top:3px;font-size:17px;">'+last+'</strong><span style="color:var(--ink-soft);font-size:13px;">'+count.toLocaleString()+' รายการในวันนั้น</span>';
   var button=document.getElementById('syncReturnsCloudBtn'); if(button) button.remove();
@@ -345,6 +363,7 @@ function handleReturnFile(f){
   if(!f)return;
   var selectedDate=document.getElementById('uploadDate').value;
   if(!selectedDate){showToast('เลือกวันที่ตีกลับก่อน',true);return;}
+  if(selectedDate.slice(0,7)!==entryMonth()){showToast('วันที่ตีกลับไม่ตรงกับเดือนที่เลือก กรุณาเปลี่ยนเดือนด้านบนก่อน',true);return;}
   return queueFileUpload(function(){return processReturnFile(f,selectedDate);},f.name+' ('+selectedDate+')');
 }
 function processReturnFile(f,selectedDate){
@@ -456,26 +475,23 @@ document.getElementById('cancelUploadBtn').addEventListener('click', async funct
   document.getElementById('fileLabel').textContent = 'เลือกหรือลากไฟล์ Excel/CSV จาก JST มาวาง';
 });
 
-function currentMonthKey(){
-  var now = new Date();
-  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-}
+function currentMonthKey(){return ClaimsDB.activeMonth();}
 var thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 function monthLabel(key){
   var parts = key.split('-');
   return thaiMonths[parseInt(parts[1])-1] + ' ' + (parseInt(parts[0])+543);
 }
 
-function renderPrevMonthBanner(curMonth){
-  var oldMonths = {};
-  returnsData.forEach(function(r){
-    if(r.date && r.date.slice(0,7) !== curMonth) oldMonths[r.date.slice(0,7)] = (oldMonths[r.date.slice(0,7)]||0)+1;
-  });
-  var keys = Object.keys(oldMonths);
-  var banner = document.getElementById('prevMonthBanner');
-  if(!keys.length){ banner.style.display = 'none'; return; }
-  banner.style.display = 'block';
-  document.getElementById('prevMonthText').textContent = 'พบข้อมูลเดือนก่อนหน้าค้างอยู่ ' + keys.map(function(k){ return monthLabel(k)+' ('+oldMonths[k]+' รายการ)'; }).join(', ');
+function unclosedOldMonths(){
+ var closed=new Set(ClaimsDB.read('pi_returns_archive').map(function(x){return x.month;})), months=new Set();
+ returnsData.forEach(function(r){var m=(r.date||'').slice(0,7);if(m&&m<currentMonthKey())months.add(m);});
+ getOutboundData().forEach(function(r){var m=(r.date||'').slice(0,7);if(m&&m<currentMonthKey()&&!closed.has(m))months.add(m);});
+ return Array.from(months).sort();
+}
+function renderPrevMonthBanner(){
+ var months=unclosedOldMonths(), banner=document.getElementById('prevMonthBanner');
+ banner.style.display=months.length?'block':'none';
+ document.getElementById('prevMonthText').textContent='มีรอบเดือนเก่าที่รอปิด: '+months.map(monthLabel).join(', ')+' — เก็บย้อนหลังได้โดยไม่ลบทะเบียนส่งออก';
 }
 
 function exportToCSV(rows, filename){
@@ -496,42 +512,42 @@ async function saveToArchive(rows, monthKeys){
   try{ archive = JSON.parse(ClaimsDB.getItem('pi_returns_archive') || '[]'); } catch(e){ archive = []; }
   monthKeys.forEach(function(mk){
     var monthRows = rows.filter(function(r){ return r.date && r.date.slice(0,7) === mk; });
-    if(!monthRows.length) return;
+    var outboundCount=getOutboundData().filter(function(r){return (r.date||'').slice(0,7)===mk;}).length;
+    if(!monthRows.length&&!outboundCount) return;
     var previousMonth=archive.find(function(a){return a.month===mk;});
     monthRows=ClaimsDB.mergeIncoming('pi_returns_data',previousMonth ? previousMonth.rows : [],monthRows);
     archive = archive.filter(function(a){ return a.month !== mk; }); // แทนที่ถ้าเคยเก็บเดือนนี้ไว้แล้ว
-    archive.push({month: mk, rows: monthRows, archivedAt: new Date().toISOString()});
+    archive.push(Object.assign({},previousMonth||{},{month:mk,rows:monthRows,outboundCount:outboundCount,closed:true,archivedAt:new Date().toISOString()}));
   });
   var remaining=returnsData.filter(function(r){return !monthKeys.includes((r.date||'').slice(0,7));});
   await ClaimsDB.saveMany({pi_returns_archive:archive,pi_returns_data:remaining});
   returnsData=getReturnsData();
 }
 
-document.getElementById('exportPrevMonthBtn').addEventListener('click', async function(){
-  var curMonth = currentMonthKey();
-  var oldRows = returnsData.filter(function(r){ return r.date && r.date.slice(0,7) !== curMonth; });
-  if(!oldRows.length) return;
-  if(!confirm('ส่งออก ' + oldRows.length + ' รายการเป็นไฟล์ แล้วย้ายเข้าคลังบน Supabase (เริ่มเดือนใหม่)?\n\nไฟล์จะถูกดาวน์โหลดไว้ก่อน กดยืนยันแล้วจะบันทึกเข้าคลัง')) return;
-  var oldMonthKeys = Array.from(new Set(oldRows.map(function(r){ return r.date.slice(0,7); }))).sort();
-  exportToCSV(oldRows, 'ตีกลับ_' + oldMonthKeys.join('_') + '.csv');
-  await saveToArchive(oldRows, oldMonthKeys);
-
-  renderAll();
-  showToast('ส่งออก ' + oldRows.length + ' รายการแล้ว และเริ่มเดือนใหม่');
-});
-
-document.getElementById('finishMonthBtn').addEventListener('click', async function(){
-  var curMonth = currentMonthKey();
-  var monthRows = returnsData.filter(function(r){ return r.date && r.date.slice(0,7) === curMonth; });
-  if(!monthRows.length){ showToast('ยังไม่มีข้อมูลของเดือนนี้ให้ส่งออก', true); return; }
-  if(!confirm('ปิดรอบเดือน ' + monthLabel(curMonth) + ' — ส่งออก ' + monthRows.length + ' รายการเป็นไฟล์ แล้วย้ายเข้าคลัง เริ่มเดือนใหม่?\n\nดาวน์โหลดไฟล์ไว้ก่อน ข้อมูลยังดูย้อนหลังได้ที่ Archive')) return;
-  exportToCSV(monthRows, 'ตีกลับ_' + curMonth + '.csv');
-  await saveToArchive(monthRows, [curMonth]);
-
-  renderAll();
-  showToast('ปิดรอบเดือน ' + monthLabel(curMonth) + ' แล้ว เริ่มเดือนใหม่ได้เลย — ดูย้อนหลังได้ที่หน้า Archive');
-});
-
+function exportMonthlyCSV(months, rows){
+ function csv(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}
+ var lines=[['ประเภท','วันที่','เลขพัสดุ','เลขออเดอร์','ชื่อสินค้า','จำนวน','COD','ไฟล์ต้นทาง']];
+ getOutboundData().filter(function(r){return months.includes((r.date||'').slice(0,7));}).forEach(function(r){lines.push(['ส่งออก',r.date,r.tracking,'',r.product||'','',r.cod||0,r.source||'']);});
+ rows.forEach(function(r){lines.push(['ตีกลับ',r.date,r.tracking,r.order,r.product,r.qty,r.cod,r.source]);});
+ var url=URL.createObjectURL(new Blob(['\uFEFF'+lines.map(function(line){return line.map(csv).join(',');}).join('\n')],{type:'text/csv;charset=utf-8;'}));
+ var a=document.createElement('a');a.href=url;a.download='รอบเดือน_'+months.join('_')+'.csv';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+async function closeSelectedMonths(months){
+ if(queuedUploads||pendingUpload){showToast('รออัปโหลดและบันทึก/ยกเลิกพรีวิวให้เสร็จก่อนปิดเดือน',true);return;}
+ var rows=getReturnsData().filter(function(r){return months.includes((r.date||'').slice(0,7));});
+ var sent=getOutboundData().filter(function(r){return months.includes((r.date||'').slice(0,7));});
+ if(!rows.length&&!sent.length){showToast('ไม่มีข้อมูลในเดือนที่เลือกให้ปิดรอบ',true);return;}
+ if(!confirm('ปิดรอบ '+months.map(monthLabel).join(', ')+' — ส่งออก '+sent.length+' เลข / ตีกลับ '+rows.length+' แถว\nเก็บประวัติไว้ใน Archive และเริ่มรอบใหม่ งานเคลมกับ Tracking ไม่ถูกลบ ยืนยันไหม?'))return;
+ try{
+  exportMonthlyCSV(months,rows);
+  await saveToArchive(rows,months);
+  entryMonthPinned=false;document.getElementById('entryMonth').value=ClaimsDB.activeMonth();
+  window.renderCloudPage();
+  showToast('ปิดรอบสำเร็จ ประวัติยังอยู่ใน Archive · รอบใหม่ '+monthLabel(ClaimsDB.activeMonth()));
+ }catch(e){showToast('ยังปิดรอบไม่สำเร็จ: '+e.message+' — ตรวจรายการรอส่งก่อนกดซ้ำ',true);}
+}
+document.getElementById('exportPrevMonthBtn').addEventListener('click',function(){return closeSelectedMonths(unclosedOldMonths());});
+document.getElementById('finishMonthBtn').addEventListener('click',function(){return closeSelectedMonths([entryMonth()]);});
 
 // ===== เลือกรายการตีกลับเพื่อเริ่มเคลม (ย้ายมาจากหน้า Claims) =====
 
@@ -683,6 +699,7 @@ function renderMultiClaimForm(items){
 renderPickList();
 
 function renderAll(){
+  renderMonthScope();
   renderPrevMonthBanner(currentMonthKey());
 }
 renderAll();

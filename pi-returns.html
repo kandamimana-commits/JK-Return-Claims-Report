@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="claims-auth.js?v=20260921-cloud"></script>
-<script defer src="claims-data.js?v=20260922-delta"></script>
+<script defer src="claims-data.js?v=20261009-monthly"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -175,10 +175,10 @@ function setViewMode(mode){
   render();
 }
 
-var lastReturnDate=getReturnsData().map(function(x){return x.date;}).filter(Boolean).sort().pop();
-var now = lastReturnDate ? new Date(lastReturnDate+'T12:00:00') : new Date();
-document.getElementById('viewDayInput').value = lastReturnDate || now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-document.getElementById('viewMonthInput').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+var now = new Date();
+var dateParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now).map(function(x){return [x.type,x.value];}));
+document.getElementById('viewDayInput').value=dateParts.year+'-'+dateParts.month+'-'+dateParts.day;
+document.getElementById('viewMonthInput').value=(ClaimsDB.read('pi_report_summary')[0]||{}).active_month||ClaimsDB.calendarMonth();
 document.getElementById('viewDayInput').addEventListener('change', render);
 document.getElementById('viewMonthInput').addEventListener('change', render);
 
@@ -237,6 +237,7 @@ function updateReturnDates(){
   dates.forEach(function(d){var option=document.createElement('option');option.value=d;option.textContent=thaiDateLabel(d);select.append(option);});
 }
 window.renderCloudPage=function(){updateReturnDates();render();};
+setViewMode('month');
 window.renderCloudPage();
 </script>
 </body>

@@ -7,13 +7,17 @@ const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
 const needed=({
  'index.html':['pi_report_summary'],
  'pi-report.html':['pi_report_summary'],
- 'pi-returns.html':['pi_returns_report'],'pi-claims.html':[keys[3]],
+ 'pi-returns.html':['pi_returns_report','pi_report_summary'],'pi-claims.html':[keys[3]],
  'pi-enter-data.html':[keys[0],keys[1],keys[3],keys[4]],'pi-tracking.html':[keys[0],keys[2],keys[3]],
- 'pi-archive.html':['pi_archive_summary'],'pi-archive-outbound.html':[keys[0]],
+ 'pi-archive.html':['pi_archive_summary'],'pi-archive-outbound.html':[keys[0],keys[4]],
  'pi-archive-returns.html':[keys[4]],'pi-archive-tracking.html':[keys[2]]
 })[page]||[];
 let cache={},versions={},ready=false,admin=false,busy=false,draftDB,initialized=false;
-let refreshing=false,lastCheckAt=0,dataEpoch=0,interactionEpoch=0;
+let refreshing=false,lastCheckAt=0,dataEpoch=0,interactionEpoch=0,reportMonth=null;
+function calendarMonth(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return p.year+'-'+p.month;}
+function nextMonth(m){let y=Number(m.slice(0,4)),n=Number(m.slice(5,7))+1;if(n===13){n=1;y++;}return y+'-'+String(n).padStart(2,'0');}
+function activeMonth(){return (cache.pi_returns_archive||[]).reduce((m,x)=>/^\d{4}-(0[1-9]|1[0-2])$/.test(x.month||'')&&nextMonth(x.month)>m?nextMonth(x.month):m,calendarMonth());}
+let calendarSeen=calendarMonth();
 const clone=v=>JSON.parse(JSON.stringify(v));
 const norm=v=>String(v||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
 const clean=v=>String(v||'').replace(/เทเล\s*-/gi,'').replace(/อัพ/g,'').replace(/\s+/g,' ').trim();
@@ -94,6 +98,7 @@ function lock(on){document.querySelectorAll('main,.wrap').forEach(el=>el.inert=o
 function describe(error){
  const text=error?.message||'เชื่อมต่อไม่สำเร็จ';
  if(error?.code==='57014'||text.includes('statement timeout'))return 'ฐานข้อมูลยกเลิกคำสั่งเพราะใช้เวลานานเกินกำหนด กรุณาเก็บไฟล์ต้นฉบับและอย่าล้างข้อมูลเบราว์เซอร์';
+ if(text.includes('claims_web_monthly_report'))return 'กรุณารัน supabase-monthly-upgrade.sql ในโปรเจ็กต์เว็บเคลมก่อนใช้รายงานรายเดือน';
  if(text.includes('claims_web_apply'))return 'กรุณารัน supabase-upload-delta-upgrade.sql ก่อนอัปโหลดด้วยเว็บรุ่นนี้';
  if(text.includes('DATA_CHANGED'))return 'มีข้อมูลเปลี่ยนจากอีกเครื่อง กรุณาโหลดข้อมูลล่าสุดก่อนทำรายการใหม่ ฉบับร่างยังอยู่ในรายการรอส่ง';
  if(text.includes('claims_web_snapshot'))return 'กรุณารัน supabase-initial-load-upgrade.sql เพื่อเปิดระบบโหลดหน้าแบบใหม่';
@@ -122,7 +127,9 @@ async function readCollection(key){
 }
 async function fetchCollections(selected){
  if(!selected.length)return [];
- const result=await window.claimsSupabase.rpc('claims_web_snapshot',{p_keys:selected});
+ const result=selected.length===1&&selected[0]==='pi_report_summary'
+  ? await window.claimsSupabase.rpc('claims_web_monthly_report',{p_month:reportMonth}).then(r=>({error:r.error,data:{pi_report_summary:r.data}}))
+  : await window.claimsSupabase.rpc('claims_web_snapshot',{p_keys:selected});
  if(result.error)throw result.error;
  return selected.map(key=>{
   const data=result.data?.[key];
@@ -160,6 +167,7 @@ async function refresh(force=false){
   if(interrupted())return;
   const changed=needed.filter(key=>Number(latest[key])!==versions[key]);
   if(!changed.length){
+   if(calendarSeen!==calendarMonth()){calendarSeen=calendarMonth();renderPage();}
    if(force===true)message('ข้อมูลเป็นเวอร์ชันล่าสุดแล้ว · ไม่ต้องโหลดซ้ำ');
    return;
   }
@@ -171,6 +179,15 @@ async function refresh(force=false){
  }catch(e){
   if(!interrupted())message('ตรวจข้อมูลใหม่ไม่สำเร็จ — ยังแสดงข้อมูลครั้งล่าสุด: '+describe(e),true,{text:'ลองใหม่',run:()=>refresh(true)});
  }finally{refreshing=false;}
+}
+async function setReportMonth(month){
+ if(!ready||busy)return;
+ if(month!==null&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return;
+ const previous=reportMonth;reportMonth=month;busy=true;dataEpoch++;lock(true);
+ message('กำลังโหลดรายงานเดือนที่เลือก…');
+ try{await load();renderPage();message('รายงานรายเดือนจาก Supabase · อัปเดตแล้ว');}
+ catch(e){reportMonth=previous;renderPage();message('โหลดเดือนที่เลือกไม่สำเร็จ: '+describe(e),true);}
+ finally{busy=false;lock(false);}
 }
 async function commit(changes,draftId,patches){
  if(!patches)throw Error('ฉบับร่างรุ่นเก่า: ใช้นำเข้าเฉพาะที่ขาด หรือสำรอง JSON ก่อนอัปไฟล์ต้นฉบับใหม่');
@@ -283,7 +300,7 @@ window.ClaimsDB={
   if(!ready||!cache[key])throw Error('ข้อมูลยังไม่พร้อม');return JSON.stringify(cache[key]);
  },
  setItem(key,value){return saveMany({[key]:JSON.parse(value)});},
- read(key){return clone(cache[key]||[]);},saveMany,identity,mergeIncoming,readWorkbook,cleanSku:clean,refresh,recovery,admin:false
+ read(key){return clone(cache[key]||[]);},calendarMonth,activeMonth,nextMonth,setReportMonth,saveMany,identity,mergeIncoming,readWorkbook,cleanSku:clean,refresh,recovery,admin:false
 };
 window.addEventListener('claims-auth-ready',bootstrap);
 window.addEventListener('unhandledrejection',event=>{

@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="claims-auth.js?v=20260921-cloud"></script>
-<script defer src="claims-data.js?v=20260922-delta"></script>
+<script defer src="claims-data.js?v=20261009-monthly"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -121,8 +121,8 @@
     <p class="pagesub">แยกคลังข้อมูลตามประเภท เลือกเข้าไปดูหรือดาวน์โหลดข้อมูลที่ต้องใช้</p>
 
     <div class="archive-grid">
-      <a class="archive-link" href="pi-archive-returns.html"><div class="archive-icon">↩️</div><h2>ข้อมูลตีกลับ</h2><p class="hint">รอบเดือนที่ปิดแล้ว พร้อมดาวน์โหลดไฟล์ CSV</p><p class="archive-count" id="returnArchiveCount">0 รอบ</p></a>
-      <a class="archive-link" href="pi-archive-outbound.html"><div class="archive-icon">🚚</div><h2>ทะเบียนส่งออก</h2><p class="hint">ข้อมูลไฟล์ส่งออกรายวันที่อัปโหลดจาก JST</p><p class="archive-count" id="outboundArchiveCount">0 วัน</p></a>
+      <a class="archive-link" href="pi-archive-returns.html"><div class="archive-icon">↩️</div><h2>ข้อมูลตีกลับ</h2><p class="hint">รอบเดือนที่ปิดแล้ว เก็บตีกลับไว้พร้อมดาวน์โหลด CSV</p><p class="archive-count" id="returnArchiveCount">0 รอบ</p></a>
+      <a class="archive-link" href="pi-archive-outbound.html"><div class="archive-icon">🚚</div><h2>ทะเบียนส่งออก</h2><p class="hint">ประวัติส่งออกทุกเดือน เลือกเดือนย้อนหลังและดาวน์โหลด CSV</p><p class="archive-count" id="outboundArchiveCount">0 วัน</p></a>
       <a class="archive-link" href="pi-archive-tracking.html"><div class="archive-icon">🔎</div><h2>ผลติดตามพัสดุ</h2><p class="hint">ผลดิบและผลสรุปที่อัปโหลดกลับจาก AI B</p><p class="archive-count" id="trackingArchiveCount">0 วัน</p></a>
     </div>
     <div id="archiveList" style="display:none;"></div>
