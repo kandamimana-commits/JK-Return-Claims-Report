@@ -94,7 +94,7 @@
   .danger-card{background:var(--stamp-red-soft); border:none;}
   .danger-card .section-label{color:var(--stamp-red-deep);}
   .found-card{border:1.5px solid var(--stamp-green); background:var(--stamp-green-soft); border-radius:var(--radius-md); padding:16px; margin-top:14px;}
-  .archive-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px;}
+  .archive-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px;}
   .archive-link{display:block; min-height:178px; text-decoration:none; color:var(--ink); background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-lg); padding:22px; transition:transform .16s ease, border-color .16s ease;}
   .archive-link:hover{transform:translateY(-3px); border-color:var(--stamp-red);}
   .archive-icon{font-size:28px; margin-bottom:12px;}.archive-link h2{font-family:var(--font-display); font-size:18px; margin:0 0 6px;}.archive-count{font-family:var(--font-display); font-size:27px; font-weight:700; color:var(--stamp-red); margin:14px 0 0;}
@@ -111,7 +111,6 @@
       <a class="navitem" href="pi-returns.html"><span class="navicon">↩️</span><span class="navlabel">Return</span></a>
       <a class="navitem" href="pi-claims.html"><span class="navicon">🧾</span><span class="navlabel">Claims</span></a>
       <a class="navitem" href="pi-enter-data.html"><span class="navicon">✏️</span><span class="navlabel">Enter data</span></a>
-      <a class="navitem" href="pi-tracking.html"><span class="navicon">🔎</span><span class="navlabel">Tracking</span></a>
       <a class="navitem active" href="pi-archive.html"><span class="navicon">🗂️</span><span class="navlabel">Archive</span></a>
     </nav>
   </aside>
@@ -123,7 +122,6 @@
     <div class="archive-grid">
       <a class="archive-link" href="pi-archive-returns.html"><div class="archive-icon">↩️</div><h2>ข้อมูลตีกลับ</h2><p class="hint">รอบเดือนที่ปิดแล้ว เก็บตีกลับไว้พร้อมดาวน์โหลด CSV</p><p class="archive-count" id="returnArchiveCount">0 รอบ</p></a>
       <a class="archive-link" href="pi-archive-outbound.html"><div class="archive-icon">🚚</div><h2>ทะเบียนส่งออก</h2><p class="hint">ประวัติส่งออกทุกเดือน เลือกเดือนย้อนหลังและดาวน์โหลด CSV</p><p class="archive-count" id="outboundArchiveCount">0 วัน</p></a>
-      <a class="archive-link" href="pi-archive-tracking.html"><div class="archive-icon">🔎</div><h2>ผลติดตามพัสดุ</h2><p class="hint">ผลดิบและผลสรุปที่อัปโหลดกลับจาก AI B</p><p class="archive-count" id="trackingArchiveCount">0 วัน</p></a>
     </div>
     <div id="archiveList" style="display:none;"></div>
   </main>
@@ -184,7 +182,6 @@ var summary=ClaimsDB.read('pi_archive_summary')[0];
 if(!summary) throw Error('ยังไม่ได้รับยอดสรุปคลังข้อมูลจาก Supabase');
 document.getElementById('returnArchiveCount').textContent = summary.returns + ' รอบ';
 document.getElementById('outboundArchiveCount').textContent = summary.outbound + ' วัน';
-document.getElementById('trackingArchiveCount').textContent = summary.tracking + ' วัน';
 };window.renderCloudPage();
 </script>
 </body>

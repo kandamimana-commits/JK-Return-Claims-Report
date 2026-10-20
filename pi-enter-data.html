@@ -107,7 +107,6 @@
       <a class="navitem" href="pi-returns.html"><span class="navicon">↩️</span><span class="navlabel">Return</span></a>
       <a class="navitem" href="pi-claims.html"><span class="navicon">🧾</span><span class="navlabel">Claims</span></a>
       <a class="navitem active" href="pi-enter-data.html"><span class="navicon">✏️</span><span class="navlabel">Enter data</span></a>
-      <a class="navitem" href="pi-tracking.html"><span class="navicon">🔎</span><span class="navlabel">Tracking</span></a>
       <a class="navitem" href="pi-archive.html"><span class="navicon">🗂️</span><span class="navlabel">Archive</span></a>
     </nav>
   </aside>
@@ -120,7 +119,6 @@
     <div class="card" id="outboundUploadCard">
       <div class="toolbar">
         <p class="section-label" style="margin:0;">🚚 ทะเบียนพัสดุส่งออกรายวัน</p>
-        <a class="btn-ghost" href="pi-tracking.html" style="text-decoration:none; display:inline-flex; align-items:center;">เปิดคิว Tracking →</a>
       </div>
       <p class="hint">เลือกวันที่ส่งออกก่อน แล้วเลือก 2 ไฟล์ของวันเดียวกันได้พร้อมกัน ระบบจะรวมเลข AWB ไว้ในวันนั้น</p>
       <div class="row2" style="margin:0 0 12px;"><div><label>วันที่ส่งออก (ใช้กับไฟล์ทั้งชุด)</label><input type="date" id="outboundDateInput"></div><div></div></div>
@@ -180,7 +178,7 @@
 
     <div class="month-card" style="margin-top:18px;">
       <p class="section-label">🎉 ปิดรอบเดือน</p>
-      <p class="hint">เมื่อบันทึกส่งออกและตีกลับครบแล้ว ให้ปิดเดือนที่เลือก ประวัติยังอยู่ใน Archive และ Tracking งานเคลมค้างไม่ถูกรีเซ็ต</p>
+      <p class="hint">เมื่อบันทึกส่งออกและตีกลับครบแล้ว ให้ปิดเดือนที่เลือก ประวัติยังอยู่ใน Archive งานเคลมค้างไม่ถูกรีเซ็ต</p>
       <button class="btn-main" id="finishMonthBtn">ปิดเดือนที่เลือก (ส่งออกและตีกลับ)</button>
     </div>
   </main>
@@ -537,7 +535,7 @@ async function closeSelectedMonths(months){
  var rows=getReturnsData().filter(function(r){return months.includes((r.date||'').slice(0,7));});
  var sent=getOutboundData().filter(function(r){return months.includes((r.date||'').slice(0,7));});
  if(!rows.length&&!sent.length){showToast('ไม่มีข้อมูลในเดือนที่เลือกให้ปิดรอบ',true);return;}
- if(!confirm('ปิดรอบ '+months.map(monthLabel).join(', ')+' — ส่งออก '+sent.length+' เลข / ตีกลับ '+rows.length+' แถว\nเก็บประวัติไว้ใน Archive และเริ่มรอบใหม่ งานเคลมกับ Tracking ไม่ถูกลบ ยืนยันไหม?'))return;
+ if(!confirm('ปิดรอบ '+months.map(monthLabel).join(', ')+' — ส่งออก '+sent.length+' เลข / ตีกลับ '+rows.length+' แถว\nเก็บประวัติไว้ใน Archive และเริ่มรอบใหม่ งานเคลมไม่ถูกลบ ยืนยันไหม?'))return;
  try{
   exportMonthlyCSV(months,rows);
   await saveToArchive(rows,months);
