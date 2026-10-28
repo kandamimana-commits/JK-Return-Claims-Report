@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="claims-auth.js?v=20260921-cloud"></script>
-<script defer src="claims-data.js?v=20261009-monthly"></script>
+<script defer src="claims-data.js?v=20261027-paged"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -217,11 +217,16 @@ function getReturnsData(){
 function getOutboundData(){
   try{ return JSON.parse(ClaimsDB.getItem('pi_outbound_batches') || '[]'); } catch(e){ return []; }
 }
+function outboundSummaryRows(){
+ return ClaimsDB.isDeferred?.('pi_outbound_batches') ? ClaimsDB.outboundGroups() : getOutboundData();
+}
+function outboundRowCount(row){return ClaimsDB.isDeferred?.('pi_outbound_batches') ? Number(row.count||0) : 1;}
 async function saveOutboundData(rows){ await ClaimsDB.setItem("pi_outbound_batches", JSON.stringify(rows)); }
 function renderOutboundCloudStatus(){
-    var el=document.getElementById('outboundCloudStatus'), rows=monthRowsOnly(getOutboundData());
+    var el=document.getElementById('outboundCloudStatus'), rows=monthRowsOnly(outboundSummaryRows());
     var dates=rows.map(function(x){return x.date;}).filter(Boolean).sort();
-    el.style.display='block';el.textContent=dates.length ? 'ส่งออกที่บันทึกบน Cloud ล่าสุด '+dates[dates.length-1]+' · '+rows.length.toLocaleString()+' เลข' : 'ยังไม่มีทะเบียนส่งออกของเดือน '+entryMonth();
+    var count=rows.reduce(function(n,r){return n+outboundRowCount(r);},0);
+    el.style.display='block';el.textContent=dates.length ? 'ส่งออกที่บันทึกบน Cloud ล่าสุด '+dates[dates.length-1]+' · '+count.toLocaleString()+' เลข' : 'ยังไม่มีทะเบียนส่งออกของเดือน '+entryMonth();
   }
 function outboundDate(value){
   var text = String(value || '').trim();
@@ -234,15 +239,16 @@ function outboundDate(value){
 }
 var outboundBatchGroups = [];
 function renderOutboundSummary(){
-  var rows = monthRowsOnly(getOutboundData());
+  var rows = monthRowsOnly(outboundSummaryRows());
   var dates = Array.from(new Set(rows.map(function(r){ return r.date; }).filter(Boolean))).sort().reverse();
-  document.getElementById('outboundSummary').textContent = rows.length ? 'บันทึกแล้ว '+rows.length.toLocaleString()+' เลข จาก '+dates.length+' วันในเดือน '+entryMonth() : 'ยังไม่มีทะเบียนส่งออกของเดือน '+entryMonth();
+  var count=rows.reduce(function(n,r){return n+outboundRowCount(r);},0);
+  document.getElementById('outboundSummary').textContent = rows.length ? 'บันทึกแล้ว '+count.toLocaleString()+' เลข จาก '+dates.length+' วันในเดือน '+entryMonth() : 'ยังไม่มีทะเบียนส่งออกของเดือน '+entryMonth();
   var groups = {};
   rows.forEach(function(row){
     var key = row.batchId || ('legacy-' + row.date);
     if(!groups[key]) groups[key] = {key:key, date:row.date, sources:{}, count:0, legacy:!row.batchId};
     groups[key].sources[row.source || 'ไฟล์ที่เคยบันทึกไว้'] = true;
-    groups[key].count++;
+    groups[key].count+=outboundRowCount(row);
   });
   outboundBatchGroups = Object.keys(groups).map(function(key){
     var group = groups[key];
@@ -282,10 +288,11 @@ function handleOutboundFiles(files){
   if(selectedDate.slice(0,7)!==entryMonth()){showToast('วันที่ส่งออกไม่ตรงกับเดือนที่เลือก กรุณาเปลี่ยนเดือนด้านบนก่อน',true);return;}
   return queueFileUpload(function(){return processOutboundFiles(files,selectedDate);},files.map(function(f){return f.name;}).join(' + ')+' ('+selectedDate+')');
 }
-function processOutboundFiles(files,selectedDate){
+async function processOutboundFiles(files,selectedDate){
   files = Array.from(files || []);
   if(!files.length) return;
   if(!selectedDate){ showToast('เลือกวันที่ส่งออกก่อนอัปโหลดไฟล์', true); return; }
+  await ClaimsDB.ensureCollections?.(['pi_outbound_batches']);
   var batchId = 'outbound-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
   document.getElementById('outboundFileLabel').textContent = 'เลือกแล้ว '+files.length+' ไฟล์';
   return Promise.all(files.map(function(file){
@@ -324,6 +331,8 @@ document.getElementById('fixOutboundDateBtn').addEventListener('click', async fu
   if(!batch || !newDate){ showToast('เลือกไฟล์และวันที่ใหม่ก่อน', true); return; }
   if(batch.date === newDate){ showToast('วันที่เดิมตรงกับวันที่ที่เลือกแล้ว', true); return; }
   if(!confirm('ย้าย '+batch.count.toLocaleString()+' เลข จากชุดไฟล์ '+batch.sourceLabel+'\n'+batch.date+' → '+newDate+' ใช่ไหม?')) return;
+  try{await ClaimsDB.ensureCollections?.(['pi_outbound_batches']);}
+  catch(e){showToast('ยังไม่ได้แก้วันที่: '+e.message,true);return;}
   var rows = getOutboundData();
   rows.forEach(function(row){
     var belongsToBatch = batch.legacy ? row.date === batch.date : row.batchId === batch.key;
@@ -483,7 +492,7 @@ function monthLabel(key){
 function unclosedOldMonths(){
  var closed=new Set(ClaimsDB.read('pi_returns_archive').map(function(x){return x.month;})), months=new Set();
  returnsData.forEach(function(r){var m=(r.date||'').slice(0,7);if(m&&m<currentMonthKey())months.add(m);});
- getOutboundData().forEach(function(r){var m=(r.date||'').slice(0,7);if(m&&m<currentMonthKey()&&!closed.has(m))months.add(m);});
+ outboundSummaryRows().forEach(function(r){var m=(r.date||'').slice(0,7);if(m&&m<currentMonthKey()&&!closed.has(m))months.add(m);});
  return Array.from(months).sort();
 }
 function renderPrevMonthBanner(){
@@ -506,8 +515,9 @@ function exportToCSV(rows, filename){
 }
 
 async function saveToArchive(rows, monthKeys){
+  await ClaimsDB.ensureCollections?.(['pi_returns_archive']);
   var archive = [];
-  try{ archive = JSON.parse(ClaimsDB.getItem('pi_returns_archive') || '[]'); } catch(e){ archive = []; }
+  archive = JSON.parse(ClaimsDB.getItem('pi_returns_archive') || '[]');
   monthKeys.forEach(function(mk){
     var monthRows = rows.filter(function(r){ return r.date && r.date.slice(0,7) === mk; });
     var outboundCount=getOutboundData().filter(function(r){return (r.date||'').slice(0,7)===mk;}).length;
@@ -532,6 +542,8 @@ function exportMonthlyCSV(months, rows){
 }
 async function closeSelectedMonths(months){
  if(queuedUploads||pendingUpload){showToast('รออัปโหลดและบันทึก/ยกเลิกพรีวิวให้เสร็จก่อนปิดเดือน',true);return;}
+ try{await ClaimsDB.ensureCollections?.(['pi_outbound_batches','pi_returns_archive']);}
+ catch(e){showToast('ยังไม่ได้ปิดเดือน: '+e.message,true);return;}
  var rows=getReturnsData().filter(function(r){return months.includes((r.date||'').slice(0,7));});
  var sent=getOutboundData().filter(function(r){return months.includes((r.date||'').slice(0,7));});
  if(!rows.length&&!sent.length){showToast('ไม่มีข้อมูลในเดือนที่เลือกให้ปิดรอบ',true);return;}

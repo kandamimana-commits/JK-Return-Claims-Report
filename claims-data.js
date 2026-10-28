@@ -13,7 +13,9 @@ const needed=({
  'pi-archive-returns.html':[keys[4]],'pi-archive-tracking.html':[keys[2]]
 })[page]||[];
 let cache={},versions={},ready=false,admin=false,busy=false,draftDB,initialized=false;
-let refreshing=false,lastCheckAt=0,dataEpoch=0,interactionEpoch=0,reportMonth=null;
+let refreshing=false,lastCheckAt=0,dataEpoch=0,interactionEpoch=0,reportMonth=null,loading=false;
+const deferredCollections=new Set();
+let outboundIndex=[];
 function calendarMonth(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return p.year+'-'+p.month;}
 function nextMonth(m){let y=Number(m.slice(0,4)),n=Number(m.slice(5,7))+1;if(n===13){n=1;y++;}return y+'-'+String(n).padStart(2,'0');}
 function activeMonth(){return (cache.pi_returns_archive||[]).reduce((m,x)=>/^\d{4}-(0[1-9]|1[0-2])$/.test(x.month||'')&&nextMonth(x.month)>m?nextMonth(x.month):m,calendarMonth());}
@@ -98,6 +100,8 @@ function lock(on){document.querySelectorAll('main,.wrap').forEach(el=>el.inert=o
 function describe(error){
  const text=error?.message||'เชื่อมต่อไม่สำเร็จ';
  if(error?.code==='57014'||text.includes('statement timeout'))return 'ฐานข้อมูลยกเลิกคำสั่งเพราะใช้เวลานานเกินกำหนด กรุณาเก็บไฟล์ต้นฉบับและอย่าล้างข้อมูลเบราว์เซอร์';
+ if(text.includes('claims_web_page'))return 'กรุณารัน supabase-read-performance-upgrade.sql ในโปรเจ็กต์เว็บเคลมก่อนใช้เว็บรุ่นนี้ (ไม่ต้องรัน migration เก่าซ้ำ)';
+ if(text.includes('claims_web_entry_index'))return 'กรุณารัน supabase-read-performance-upgrade.sql ในโปรเจ็กต์เว็บเคลมก่อนใช้เว็บรุ่นนี้';
  if(text.includes('claims_web_monthly_report'))return 'กรุณารัน supabase-monthly-upgrade.sql ในโปรเจ็กต์เว็บเคลมก่อนใช้รายงานรายเดือน';
  if(text.includes('claims_web_apply'))return 'กรุณารัน supabase-upload-delta-upgrade.sql ก่อนอัปโหลดด้วยเว็บรุ่นนี้';
  if(text.includes('DATA_CHANGED'))return 'มีข้อมูลเปลี่ยนจากอีกเครื่อง กรุณาโหลดข้อมูลล่าสุดก่อนทำรายการใหม่ ฉบับร่างยังอยู่ในรายการรอส่ง';
@@ -123,30 +127,117 @@ async function outbox(method,value){
  });
 }
 async function readCollection(key){
- return (await fetchCollections([key]))[0][1];
+ return (await fetchCollections([key],true))[0][1];
 }
-async function fetchCollections(selected){
+async function fetchCollections(selected,full=false){
  if(!selected.length)return [];
- const result=selected.length===1&&selected[0]==='pi_report_summary'
-  ? await window.claimsSupabase.rpc('claims_web_monthly_report',{p_month:reportMonth}).then(r=>({error:r.error,data:{pi_report_summary:r.data}}))
-  : await window.claimsSupabase.rpc('claims_web_snapshot',{p_keys:selected});
- if(result.error)throw result.error;
- return selected.map(key=>{
-  const data=result.data?.[key];
-  if(!data||!Array.isArray(data.rows)||data.revision==null||!Number.isSafeInteger(Number(data.revision))||Number(data.total)!==data.rows.length)throw Error('โหลดข้อมูลได้ไม่ครบ: '+key);
-  if(key.endsWith('_summary')&&data.rows.length!==1)throw Error('ยังไม่ได้รับยอดสรุป: '+key);
-  return [key,{rows:data.rows,version:Number(data.revision)}];
- });
+ // Reports already return a single server-side aggregate, never raw full-history rows.
+ if(selected.length===1&&selected[0]==='pi_report_summary'){
+  const data=await requestRead('claims_web_monthly_report',{p_month:reportMonth});
+  validateSummary(data,'pi_report_summary');
+  return [['pi_report_summary',{rows:data.rows,version:Number(data.revision)}]];
+ }
+ // Stage every collection. A failed/changed middle page must NEVER become a writable cache.
+ for(let attempt=0;attempt<2;attempt++){
+  try{
+   const expected=await readVersions(selected), all=[];
+   const lazy=page==='pi-enter-data.html'&&!full?selected.filter(k=>[keys[0],keys[4]].includes(k)&&(!cache[k]||deferredCollections.has(k))):[];
+   const index=lazy.length?await requestRead('claims_web_entry_index',{}):null;
+   for(const key of selected){
+    let data;
+    if(lazy.includes(key)){
+     const rows=key===keys[0]?[]:index?.archives;
+     if(!Array.isArray(rows)||!Array.isArray(index?.outbound))throw Error('ข้อมูลสรุปหน้าอัปโหลดไม่ครบ');
+     data={rows,revision:index.versions?.[key],deferred:true,index:key===keys[0]?index.outbound:undefined};
+    }else if(key==='pi_report_summary'){
+     data=await requestRead('claims_web_monthly_report',{p_month:reportMonth});validateSummary(data,key);
+    }else if(key==='pi_archive_summary'){
+     const result=await requestRead('claims_web_snapshot',{p_keys:[key]});data=result?.[key];validateSummary(data,key);
+    }else data=await readPages(key,Number(expected[key]));
+    if(Number(data.revision)!==Number(expected[key]))throw Error('DATA_CHANGED');
+    all.push([key,{rows:data.rows,version:Number(data.revision),deferred:!!data.deferred,index:data.index}]);
+   }
+   const latest=await readVersions(selected);
+   if(selected.some(key=>Number(latest[key])!==Number(expected[key])))throw Error('DATA_CHANGED');
+   return all;
+  }catch(e){if(attempt===0&&String(e.message).includes('DATA_CHANGED'))continue;throw e;}
+ }
+}
+function validateSummary(data,key){
+ if(!data||!Array.isArray(data.rows)||data.rows.length!==1||Number(data.total)!==1||data.revision==null||!Number.isSafeInteger(Number(data.revision)))throw Error('โหลดข้อมูลสรุปได้ไม่ครบ: '+key);
+}
+async function requestRead(name,params){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),20000);
+ try{
+  let query=window.claimsSupabase.rpc(name,params);
+  if(typeof query.abortSignal==='function')query=query.abortSignal(controller.signal);
+  const result=await query;
+  if(result.error)throw result.error;
+  return result.data;
+ }finally{clearTimeout(timer);}
+}
+async function readPages(key,revision){
+ const rows=[],archives=new Map(),seenCursors=new Set();
+ // Claim records can contain evidence images; keep their individual requests smaller.
+ let cursor=null,limit=key==='pi_claims_history'?25:250,readCount=0;
+ for(;;){
+  let data;
+  for(let attempt=0;;attempt++){
+   try{data=await requestRead('claims_web_page',{p_key:key,p_after:cursor,p_limit:limit,p_revision:revision});break;}
+   catch(e){
+    const text=String(e.message||'');
+    if(attempt>=2||!(e.code==='57014'||/timeout|fetch|abort|network/i.test(text)))throw e;
+    limit=Math.max(5,Math.floor(limit/2));
+   }
+  }
+  if(!data||!Array.isArray(data.rows)||data.revision==null||Number(data.revision)!==revision||!Object.hasOwn(data,'next'))throw Error('โหลดข้อมูลได้ไม่ครบ: '+key);
+  if(key==='pi_returns_archive'&&data.fragment){
+   const f=data.fragment;
+   if(typeof f.key!=='string'||!Number.isSafeInteger(f.offset)||!Number.isSafeInteger(f.total)||f.total<0||!f.meta||f.meta.month!==f.key)throw Error('รูปแบบคลังย้อนหลังไม่ครบ');
+   if(!archives.has(f.key)){
+    if(f.offset!==0)throw Error('คลังย้อนหลังขาดช่วง');
+    const record={...f.meta,rows:[]};archives.set(f.key,{record,total:f.total});rows.push(record);
+   }
+   const saved=archives.get(f.key);
+   if(saved.total!==f.total||saved.record.rows.length!==f.offset||f.offset+data.rows.length>f.total)throw Error('คลังย้อนหลังขาดช่วงหรือซ้ำ');
+   saved.record.rows.push(...data.rows);
+  }else{
+   if(key==='pi_returns_archive'&&data.rows.length)throw Error('ขาดข้อมูลกำกับคลังย้อนหลัง');
+   for(const row of data.rows)rows.push(row);
+  }
+  readCount+=data.rows.length;
+  if(!ready)message('กำลังโหลดจาก Supabase เป็นชุด · '+key+' · รับแล้ว '+readCount.toLocaleString()+' รายการ');
+  if(data.next===null)break;
+  if(typeof data.next!=='object'||Array.isArray(data.next))throw Error('ตำแหน่งโหลดข้อมูลไม่ถูกต้อง');
+  const token=JSON.stringify(data.next);
+  if(seenCursors.has(token))throw Error('ตำแหน่งโหลดข้อมูลซ้ำ หยุดเพื่อป้องกันข้อมูลไม่ครบ');
+  seenCursors.add(token);cursor=data.next;
+ }
+ for(const {record,total} of archives.values())if(record.rows.length!==total)throw Error('คลังย้อนหลังโหลดได้ไม่ครบ');
+ return {rows,revision};
 }
 function applyCollections(all){
- all.forEach(([key,data])=>{cache[key]=data.rows;versions[key]=data.version;});
+ all.forEach(([key,data])=>{
+  cache[key]=data.rows;versions[key]=data.version;
+  if(data.deferred){deferredCollections.add(key);if(key===keys[0])outboundIndex=data.index;}
+  else deferredCollections.delete(key);
+ });
+}
+async function ensureCollections(selected){
+ const missing=selected.filter(k=>!cache[k]||deferredCollections.has(k));
+ if(!missing.length)return;
+ if(busy||loading)throw Error('กำลังทำรายการอื่น กรุณารอให้เสร็จก่อน');
+ busy=true;dataEpoch++;lock(true);message('กำลังโหลดรายละเอียดที่จำเป็นก่อนทำรายการ…');
+ try{applyCollections(await fetchCollections(missing,true));renderPage();message('โหลดรายละเอียดครบแล้ว พร้อมทำรายการ');}
+ catch(e){message('โหลดรายละเอียดไม่สำเร็จ — ยังไม่ได้บันทึกหรือปิดเดือน: '+describe(e),true);throw e;}
+ finally{busy=false;lock(false);}
 }
 async function load(){applyCollections(await fetchCollections(needed));}
-async function readVersions(){
- const result=await window.claimsSupabase.rpc('claims_web_versions',{p_keys:needed});
- if(result.error)throw result.error;
- if(!result.data||needed.some(key=>result.data[key]==null||!Number.isSafeInteger(Number(result.data[key]))))throw Error('ข้อมูลเวอร์ชันตอบกลับไม่ครบ');
- return result.data;
+async function readVersions(selected=needed){
+ const data=await requestRead('claims_web_versions',{p_keys:selected});
+ if(!data||selected.some(key=>data[key]==null||!Number.isSafeInteger(Number(data[key]))))throw Error('ข้อมูลเวอร์ชันตอบกลับไม่ครบ');
+ return data;
 }
 function editing(){return /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'')||!!document.activeElement?.isContentEditable;}
 function renderPage(){
@@ -194,7 +285,7 @@ async function commit(changes,draftId,patches){
  const result=await window.claimsSupabase.rpc('claims_web_apply',{p_request_id:draftId,p_changes:patches});
  if(result.error)throw result.error;
  for(const key of Object.keys(changes))if(result.data?.versions?.[key]===undefined)throw Error('ยังไม่ได้รับผลยืนยันครบ');
- for(const key of Object.keys(changes)){cache[key]=clone(changes[key].rows);versions[key]=Number(result.data.versions[key]);}
+ for(const key of Object.keys(changes)){cache[key]=clone(changes[key].rows);versions[key]=Number(result.data.versions[key]);deferredCollections.delete(key);}
  await outbox('delete',draftId).catch(()=>{});
  message('บันทึกลง Supabase สำเร็จ · '+new Date().toLocaleTimeString('th-TH'));
  window.dispatchEvent(new CustomEvent('claims-cloud-saved'));
@@ -208,6 +299,7 @@ async function saveMany(values){
  let draftSaved=false;
  try{
   for(const key of Object.keys(values).sort()){
+   if(deferredCollections.has(key))throw Error('ยังไม่ได้โหลดรายละเอียดครบ ห้ามบันทึกทับจากข้อมูลสรุป: '+key);
    if(versions[key]===undefined)throw Error('ยังไม่ได้โหลดข้อมูล '+key);
    changes[key]={expected:versions[key],rows:normalize(key,values[key])};
   }
@@ -251,7 +343,7 @@ async function recovery(){
    try{
     const values={};let added=0;
     for(const key of Object.keys(record.values)){
-     const fresh=await readCollection(key);cache[key]=fresh.rows;versions[key]=fresh.version;
+     const fresh=await readCollection(key);applyCollections([[key,fresh]]);
      const current=clone(fresh.rows), seen=new Set(current.map(x=>identity(key,x)));
      normalize(key,record.values[key]).forEach(x=>{const id=identity(key,x);if(!seen.has(id)){seen.add(id);current.push(x);added++;}});
      values[key]=current;
@@ -277,10 +369,11 @@ async function recovery(){
  document.body.append(dialog);dialog.showModal();
 }
 async function bootstrap(event){
- if(initialized)return;
+ if(initialized||loading)return;
+ loading=true;
  const started=performance.now();
  admin=!!event.detail?.admin;window.ClaimsDB.admin=admin;
- if(!admin&&!['index.html','pi-report.html','pi-returns.html','pi-claims.html'].includes(page))return;
+ if(!admin&&!['index.html','pi-report.html','pi-returns.html','pi-claims.html'].includes(page)){loading=false;return;}
  lock(true);message('กำลังโหลดข้อมูลจาก Supabase…');
  try{
   await load();ready=true;
@@ -293,14 +386,17 @@ async function bootstrap(event){
   if(admin){const recover=document.createElement('button');recover.textContent='กู้ข้อมูลเก่า / รายการรอส่ง';recover.onclick=recovery;controls.append(recover);}
   document.getElementById('claimsDatabaseStatus').after(controls);
  }catch(e){ready=false;message('เปิดข้อมูลไม่สำเร็จ: '+describe(e),true,{text:'ลองเชื่อมต่ออีกครั้ง',run:()=>bootstrap(event)});}
+ finally{loading=false;}
 }
 window.ClaimsDB={
  getItem(key){
+  if(deferredCollections.has(key))throw Error('ยังไม่ได้โหลดรายละเอียด: '+key);
   if(key===keys[1]&&cache.pi_returns_report){const map=new Map();cache.pi_returns_report.forEach(x=>map.set(identity(keys[1],x),x));return JSON.stringify([...map.values()]);}
   if(!ready||!cache[key])throw Error('ข้อมูลยังไม่พร้อม');return JSON.stringify(cache[key]);
  },
  setItem(key,value){return saveMany({[key]:JSON.parse(value)});},
- read(key){return clone(cache[key]||[]);},calendarMonth,activeMonth,nextMonth,setReportMonth,saveMany,identity,mergeIncoming,readWorkbook,cleanSku:clean,refresh,recovery,admin:false
+ read(key){return clone(cache[key]||[]);},isDeferred:key=>deferredCollections.has(key),outboundGroups:()=>clone(outboundIndex),
+ ensureCollections,calendarMonth,activeMonth,nextMonth,setReportMonth,saveMany,identity,mergeIncoming,readWorkbook,cleanSku:clean,refresh,recovery,admin:false
 };
 window.addEventListener('claims-auth-ready',bootstrap);
 window.addEventListener('unhandledrejection',event=>{
