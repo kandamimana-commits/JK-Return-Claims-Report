@@ -120,9 +120,9 @@
       <div class="toolbar">
         <p class="section-label" style="margin:0;">🚚 ทะเบียนพัสดุส่งออกรายวัน</p>
       </div>
-      <p class="hint">เลือกวันที่ส่งออกก่อน แล้วเลือก 2 ไฟล์ของวันเดียวกันได้พร้อมกัน ระบบจะรวมเลข AWB ไว้ในวันนั้น</p>
+      <p class="hint">เลือกวันที่ส่งออกก่อน แล้วเลือกหลายไฟล์ของวันเดียวกันได้พร้อมกัน รองรับไฟล์เดิมและ SPX โดยเก็บเลขพัสดุครบทั้งตัวอักษรและตัวเลข</p>
       <div class="row2" style="margin:0 0 12px;"><div><label>วันที่ส่งออก (ใช้กับไฟล์ทั้งชุด)</label><input type="date" id="outboundDateInput"></div><div></div></div>
-      <label class="file-btn" id="outboundDropZone"><i class="ti ti-truck-delivery"></i><span id="outboundFileLabel">เลือกหรือลากไฟล์ส่งออกจาก JST มาวาง</span><input type="file" id="outboundFileInput" accept=".csv,.txt,.xlsx,.xls" multiple></label>
+      <label class="file-btn" id="outboundDropZone"><i class="ti ti-truck-delivery"></i><span id="outboundFileLabel">เลือกหรือลากไฟล์ส่งออก (ไฟล์เดิม / SPX) มาวาง</span><input type="file" id="outboundFileInput" accept=".csv,.txt,.xlsx,.xls" multiple></label>
       <p class="hint" id="outboundSummary" style="margin:12px 0 0;"></p>
       <div id="outboundCloudStatus" style="display:none;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--surface-kraft);border:1px solid var(--border);font-size:14px;"></div>
       <div class="row2" id="outboundDateFixBox" style="margin-top:12px; display:none;">
@@ -288,6 +288,35 @@ function handleOutboundFiles(files){
   if(selectedDate.slice(0,7)!==entryMonth()){showToast('วันที่ส่งออกไม่ตรงกับเดือนที่เลือก กรุณาเปลี่ยนเดือนด้านบนก่อน',true);return;}
   return queueFileUpload(function(){return processOutboundFiles(files,selectedDate);},files.map(function(f){return f.name;}).join(' + ')+' ('+selectedDate+')');
 }
+function readSpxOutbound(sheet,fileName,selectedDate,batchId){
+  // SPX exports have a download timestamp, English headers, then Thai headers.
+  // Use the exact tracking column: the adjacent link/reference columns are not IDs.
+  var matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+  function header(v){return String(v||'').trim().toLowerCase().replace(/[.\s]+/g,'');}
+  var headerIndex=matrix.findIndex(function(row){
+    var names=row.map(header);
+    return names.includes('trackingno') && names.includes('accountid');
+  });
+  if(headerIndex<0)return null;
+  var names=matrix[headerIndex].map(header), trackingIndex=names.indexOf('trackingno');
+  var codIndex=names.indexOf('codamount'), productIndex=names.indexOf('iteminparcel');
+  if(productIndex<0)productIndex=names.indexOf('itemlist');
+  var result=[];
+  matrix.slice(headerIndex+1).forEach(function(row,index){
+    if(row.every(function(v){return String(v).trim()==='';}))return;
+    var tracking=String(row[trackingIndex]||'').trim();
+    if(index===0 && tracking==='หมายเลขติดตามพัสดุ')return;
+    // Reject unexpected values instead of silently truncating or losing a parcel.
+    if(!/^[A-Za-z0-9]+$/.test(tracking)){
+      throw new Error('เลขพัสดุ SPX ว่างหรือรูปแบบไม่ถูกต้องในไฟล์ '+fileName+' แถว '+(headerIndex+index+2)+' — ยังไม่บันทึกชุดไฟล์นี้');
+    }
+    result.push({tracking:tracking,date:selectedDate,source:fileName,batchId:batchId,
+      cod:codIndex>=0?(parseFloat(String(row[codIndex]||'').replace(/[^0-9.-]/g,''))||0):0,
+      product:productIndex>=0?String(row[productIndex]||'').trim():''});
+  });
+  if(!result.length)throw new Error('ไม่พบเลขพัสดุ SPX ในไฟล์ '+fileName);
+  return result;
+}
 async function processOutboundFiles(files,selectedDate){
   files = Array.from(files || []);
   if(!files.length) return;
@@ -302,6 +331,8 @@ async function processOutboundFiles(files,selectedDate){
       reader.onload = async function(ev){
         try{
           var wb = ClaimsDB.readWorkbook(ev.target.result,file.name);
+          var spxRows=readSpxOutbound(wb.Sheets[wb.SheetNames[0]],file.name,selectedDate,batchId);
+          if(spxRows!==null)return resolve(spxRows);
           var data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:'', raw:false});
           if(!data.length) return resolve([]);
           var cols = Object.keys(data[0]);
